@@ -490,3 +490,45 @@ body.selectionMode #selectionActions {
 body.selectionMode main {
   padding-bottom: 130px;
 }
+/* PREMIUM SVG ICON STYLING */
+
+#menu svg,
+#search svg {
+  width: 27px;
+  height: 27px;
+  display: block;
+}
+
+#nav button {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+
+#nav button svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: #f1f1f1;
+}
+
+#nav button.active svg {
+  color: #49b5ff;
+}
+
+#selectionActions .actionIcon svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+#fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#fab svg {
+  width: 31px;
+  height: 31px;
+}
