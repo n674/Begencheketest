@@ -1177,8 +1177,17 @@ if (
       const section = button.dataset.section;
       if (!sectionIcons.includes(section)) return;
 
-      const label = button.textContent.trim()
-        .replace(/^[▣$▤♙⚙]\s*/, '');
+const labels = {
+  notes: 'Все заметки',
+  money: 'Доходы / расходы',
+  debts: 'Долги',
+  clients: 'Клиенты',
+  cash: 'Касса',
+  reports: 'Отчёты',
+  settings: 'Настройки'
+};
+
+const label = labels[section];
 
       button.innerHTML = svg(section) +
         '<span>' + label + '</span>';
