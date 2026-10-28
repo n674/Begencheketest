@@ -532,3 +532,25 @@ body.selectionMode main {
   width: 31px;
   height: 31px;
 }
+/* MENU ICON ALIGNMENT FIX */
+
+#nav button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 17px;
+}
+
+#nav button svg {
+  display: block;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  transform: translateY(2px);
+}
+
+#nav button span {
+  display: flex;
+  align-items: center;
+  line-height: 1.3;
+}
