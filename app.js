@@ -374,8 +374,6 @@ function render() {
     sub.textContent = 'Мои заметки';
     c.append(sub);
 
-    renderFolderBar(c);
-
     const grid = document.createElement('div');
     grid.className = 'grid';
     grid.id = 'noteGrid';
