@@ -16,7 +16,7 @@ let data;
 
 try {
   data = JSON.parse(localStorage.getItem(KEY));
-} catch {}
+} catch (e) {}
 
 if (!data || typeof data !== 'object') data = {};
 
@@ -25,11 +25,15 @@ for (const k of ['notes', 'money', 'debts', 'clients']) {
 }
 
 data.pin ??= '';
+data.folders ??= [];
 
-const persist = () => localStorage.setItem(KEY, JSON.stringify(data));
+const persist = () => {
+  localStorage.setItem(KEY, JSON.stringify(data));
+};
 
 const id = () =>
-  Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  Date.now().toString(36) +
+  Math.random().toString(36).slice(2, 7);
 
 const now = () => new Date().toLocaleString('ru-RU');
 
@@ -50,6 +54,10 @@ let search = '';
 let editing = null;
 let saveTimer = null;
 
+let selectionMode = false;
+let selectedNotes = new Set();
+let currentFolder = 'all';
+
 const sections = [
   ['notes', '▣', 'Все заметки'],
   ['money', '$', 'Доходы / расходы'],
@@ -69,6 +77,8 @@ $('#shade').onclick = () => drawer(false);
 $('#closeDrawer').onclick = () => drawer(false);
 
 function go(s) {
+  exitSelection(false);
+
   section = s;
   drawer(false);
   search = '';
@@ -121,135 +131,329 @@ function card(title, detail, remove) {
   return el;
 }
 
+// ======================================
+// SAMSUNG NOTES TARZI SECIM SISTEMI
+// ======================================
+
+function enterSelection(noteId) {
+  if (section !== 'notes') return;
+
+  selectionMode = true;
+  selectedNotes.add(noteId);
+
+  document.body.classList.add('selectionMode');
+
+  updateSelection();
+  render();
+}
+
+function exitSelection(shouldRender = true) {
+  selectionMode = false;
+  selectedNotes.clear();
+
+  document.body.classList.remove('selectionMode');
+
+  if (shouldRender && section === 'notes') {
+    render();
+  }
+}
+
+function updateSelection() {
+  const count = selectedNotes.size;
+
+  $('#selectionCount').textContent =
+    `${count} выбрано`;
+
+  document.body.classList.toggle(
+    'selectionMode',
+    selectionMode
+  );
+
+  $('#actionMove').disabled = count === 0;
+  $('#actionLock').disabled = count === 0;
+  $('#actionShare').disabled = count === 0;
+  $('#actionDelete').disabled = count === 0;
+}
+
+function toggleSelection(noteId) {
+  if (selectedNotes.has(noteId)) {
+    selectedNotes.delete(noteId);
+  } else {
+    selectedNotes.add(noteId);
+  }
+
+  if (!selectedNotes.size) {
+    exitSelection();
+    return;
+  }
+
+  updateSelection();
+  render();
+}
+
+$('#selectionCancel').onclick = () => exitSelection();
+
+function selectedRecords() {
+  return data.notes.filter(n => selectedNotes.has(n.id));
+}
+
+// ======================================
+// KLASOR SISTEMI
+// ======================================
+
+function folderName(n) {
+  return n.folder || 'Без папки';
+}
+
+function renderFolderBar(container) {
+  const wrap = document.createElement('div');
+
+  wrap.style.cssText = `
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding:4px 0 16px;
+    scrollbar-width:none;
+  `;
+
+  const names = [
+    ['all', 'Все'],
+    ['none', 'Без папки'],
+    ...data.folders.map(f => [f, f])
+  ];
+
+  names.forEach(([value, label]) => {
+    const b = document.createElement('button');
+
+    b.textContent = label;
+
+    b.style.cssText = `
+      flex-shrink:0;
+      padding:9px 14px;
+      border-radius:20px;
+      background:${currentFolder === value ? '#238bdf' : '#242b3c'};
+      color:white;
+      font-size:13px;
+    `;
+
+    b.onclick = () => {
+      currentFolder = value;
+      exitSelection(false);
+      render();
+    };
+
+    wrap.append(b);
+  });
+
+  container.append(wrap);
+}
+
+// ======================================
+// NOT KARTLARI
+// ======================================
+
+function createNoteCard(n) {
+  const el = document.createElement('div');
+
+  el.className = 'noteCard fade';
+
+  if (selectedNotes.has(n.id)) {
+    el.classList.add('selected');
+  }
+
+  const preview = n.locked
+    ? '🔒 Заблокированная заметка'
+    : (n.body || n.title);
+
+  const title = n.locked
+    ? '🔒 ' + (n.title || 'Без названия')
+    : (n.title || 'Без названия');
+
+  el.innerHTML = `
+    <span class="noteCheck">
+      ${selectedNotes.has(n.id) ? '✓' : ''}
+    </span>
+
+    <div class="notePreview">
+      ${esc(preview)}
+    </div>
+
+    <div class="noteLabel">
+      ${esc(title)}
+    </div>
+
+    <div class="noteDate">
+      ${esc(n.created)}
+    </div>
+  `;
+
+  let pressTimer = null;
+  let longPressed = false;
+  let startX = 0;
+  let startY = 0;
+
+  const cancelPress = () => {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  };
+
+  el.addEventListener('pointerdown', e => {
+    if (selectionMode) return;
+
+    if (e.pointerType === 'mouse' && e.button !== 0) {
+      return;
+    }
+
+    startX = e.clientX;
+    startY = e.clientY;
+    longPressed = false;
+
+    cancelPress();
+
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+
+      if (navigator.vibrate) {
+        navigator.vibrate(35);
+      }
+
+      enterSelection(n.id);
+    }, 600);
+  });
+
+  el.addEventListener('pointermove', e => {
+    if (
+      Math.abs(e.clientX - startX) > 12 ||
+      Math.abs(e.clientY - startY) > 12
+    ) {
+      cancelPress();
+    }
+  });
+
+  el.addEventListener('pointerup', cancelPress);
+  el.addEventListener('pointercancel', cancelPress);
+  el.addEventListener('pointerleave', cancelPress);
+
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    cancelPress();
+
+    if (!selectionMode) {
+      longPressed = true;
+      enterSelection(n.id);
+    }
+  });
+
+  el.onclick = e => {
+    if (longPressed) {
+      longPressed = false;
+      return;
+    }
+
+    if (selectionMode) {
+      toggleSelection(n.id);
+    } else {
+      openNote(n.id);
+    }
+  };
+
+  return el;
+}
+
+// ======================================
+// ANA EKRAN
+// ======================================
+
 function render() {
   const c = $('#content');
   c.replaceChildren();
 
-  // NOTLAR
   if (section === 'notes') {
-    c.innerHTML = `
-      <div class="sub">Мои заметки</div>
-      <div class="grid" id="noteGrid"></div>
-    `;
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    sub.textContent = 'Мои заметки';
+    c.append(sub);
 
-    let notes = data.notes
-      .filter(n =>
-        ((n.title || '') + ' ' + (n.body || ''))
+    renderFolderBar(c);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    grid.id = 'noteGrid';
+    c.append(grid);
+
+    let notes = data.notes.filter(n => {
+      const matchesSearch =
+        ((n.title || '') + ' ' + (n.locked ? '' : (n.body || '')))
           .toLowerCase()
-          .includes(search.toLowerCase())
-      )
-      .slice()
-      .reverse();
+          .includes(search.toLowerCase());
+
+      const matchesFolder =
+        currentFolder === 'all' ||
+        (currentFolder === 'none' && !n.folder) ||
+        n.folder === currentFolder;
+
+      return matchesSearch && matchesFolder;
+    }).slice().reverse();
 
     if (!notes.length) {
-      c.insertAdjacentHTML(
-        'beforeend',
-        '<p class="empty">Заметок пока нет. Нажмите ✎, чтобы создать первую.</p>'
-      );
+      const empty = document.createElement('p');
+      empty.className = 'empty';
+      empty.textContent = 'Заметок пока нет.';
+      c.append(empty);
     }
 
     notes.forEach(n => {
-      let el = document.createElement('div');
-      el.className = 'noteCard fade';
-
-      el.innerHTML = `
-        <div class="notePreview">${esc(n.body || n.title)}</div>
-        <div class="noteLabel">${esc(n.title || 'Без названия')}</div>
-        <div class="noteDate">${esc(n.created)}</div>
-      `;
-
-      // Nota dokununca düzenleme ekranı açılır
-      el.onclick = () => openNote(n.id);
-
-      // YENİ: NOT SİLME BUTONU
-      let deleteBtn = document.createElement('button');
-
-      deleteBtn.textContent = '🗑 Удалить';
-
-      deleteBtn.style.cssText = `
-        display: block;
-        margin: 12px auto;
-        padding: 10px 18px;
-        background: #b91c1c;
-        color: white;
-        border: 0;
-        border-radius: 10px;
-        font-size: 14px;
-        cursor: pointer;
-      `;
-
-      deleteBtn.onclick = e => {
-        e.stopPropagation();
-
-        if (confirm('Удалить эту заметку?')) {
-          data.notes = data.notes.filter(x => x.id !== n.id);
-
-          persist();
-          render();
-        }
-      };
-
-      el.append(deleteBtn);
-      $('#noteGrid').append(el);
+      grid.append(createNoteCard(n));
     });
 
+    updateSelection();
     return;
   }
 
-  // GELİR / GİDER
   if (section === 'money') {
     c.innerHTML = '<div class="sub">Операции</div>';
 
     data.money.slice().reverse().forEach(n => {
-      c.append(
-        card(
-          n.kind + ' ' + fmt(n.amount, n.currency),
-          n.description + '\n' + n.created,
-          { table: 'money', id: n.id }
-        )
-      );
+      c.append(card(
+        n.kind + ' ' + fmt(n.amount, n.currency),
+        (n.description || '') + '\n' + n.created,
+        { table: 'money', id: n.id }
+      ));
     });
 
     return;
   }
 
-  // BORÇLAR
   if (section === 'debts') {
     c.innerHTML = '<div class="sub">Долги</div>';
 
     data.debts.slice().reverse().forEach(n => {
-      c.append(
-        card(
-          n.person + ' — ' + n.kind,
-          fmt(n.amount, n.currency) +
-            '\n' + n.description +
-            '\n' + n.created,
-          { table: 'debts', id: n.id }
-        )
-      );
+      c.append(card(
+        n.person + ' — ' + n.kind,
+        fmt(n.amount, n.currency) +
+          '\n' + (n.description || '') +
+          '\n' + n.created,
+        { table: 'debts', id: n.id }
+      ));
     });
 
     return;
   }
 
-  // MÜŞTERİLER
   if (section === 'clients') {
     c.innerHTML = '<div class="sub">Клиенты</div>';
 
     data.clients.slice().reverse().forEach(n => {
-      c.append(
-        card(
-          n.name,
-          n.phone + '\n' + n.details,
-          { table: 'clients', id: n.id }
-        )
-      );
+      c.append(card(
+        n.name,
+        (n.phone || '') + '\n' + (n.details || ''),
+        { table: 'clients', id: n.id }
+      ));
     });
 
     return;
   }
 
-  // KASA VE RAPORLAR
   if (section === 'cash' || section === 'reports') {
     c.innerHTML =
       '<div class="sub">' +
@@ -257,44 +461,41 @@ function render() {
       '</div>';
 
     for (const currency of ['USD', 'EUR', 'TMT']) {
-      let inc = data.money
+      const inc = data.money
         .filter(x =>
-          x.currency === currency && x.kind === 'Доход'
+          x.currency === currency &&
+          x.kind === 'Доход'
         )
         .reduce((a, x) => a + Number(x.amount), 0);
 
-      let exp = data.money
+      const exp = data.money
         .filter(x =>
-          x.currency === currency && x.kind === 'Расход'
+          x.currency === currency &&
+          x.kind === 'Расход'
         )
         .reduce((a, x) => a + Number(x.amount), 0);
 
-      c.append(
-        card(
-          symbols[currency],
-          `Доходы: ${fmt(inc, currency)}
+      c.append(card(
+        symbols[currency],
+        `Доходы: ${fmt(inc, currency)}
 Расходы: ${fmt(exp, currency)}
 Баланс: ${fmt(inc - exp, currency)}`
-        )
-      );
+      ));
     }
 
     if (section === 'reports') {
-      c.append(
-        card(
-          'Сводка',
-          `Заметок: ${data.notes.length}
+      c.append(card(
+        'Сводка',
+        `Заметок: ${data.notes.length}
 Клиентов: ${data.clients.length}
 Долгов: ${data.debts.length}
 Валюты не суммируются.`
-        )
-      );
+      ));
     }
 
     return;
   }
 
-  // AYARLAR
   if (section === 'settings') {
     c.innerHTML = `
       <div class="sub">Настройки</div>
@@ -327,29 +528,224 @@ function render() {
 
     $('#pinBtn').onclick = pinForm;
     $('#exportBtn').onclick = backup;
-
-    $('#importBtn').onclick = () =>
-      $('#fileImport').click();
-
+    $('#importBtn').onclick = () => $('#fileImport').click();
     $('#fileImport').onchange = importBackup;
   }
 }
 
+// ======================================
+// ALT MENU - MOVE
+// ======================================
+
+$('#actionMove').onclick = () => {
+  if (!selectedNotes.size) return;
+
+  const folder = prompt(
+    'Введите название папки:',
+    selectedRecords()[0]?.folder || ''
+  );
+
+  if (folder === null) return;
+
+  const name = folder.trim();
+
+  if (name && !data.folders.includes(name)) {
+    data.folders.push(name);
+  }
+
+  selectedRecords().forEach(n => {
+    n.folder = name;
+  });
+
+  persist();
+  exitSelection();
+
+  alert('Заметки перемещены');
+};
+
+// ======================================
+// ALT MENU - LOCK
+// ======================================
+
+$('#actionLock').onclick = () => {
+  if (!selectedNotes.size) return;
+
+  if (!data.pin) {
+    alert(
+      'Сначала установите PIN в настройках.'
+    );
+    return;
+  }
+
+  const pin = prompt('Введите PIN');
+
+  if (pin !== data.pin) {
+    alert('Неверный PIN');
+    return;
+  }
+
+  const records = selectedRecords();
+  const allLocked = records.every(n => n.locked);
+
+  records.forEach(n => {
+    n.locked = !allLocked;
+  });
+
+  persist();
+  exitSelection();
+
+  alert(allLocked
+    ? 'Заметки разблокированы'
+    : 'Заметки заблокированы'
+  );
+};
+
+// ======================================
+// ALT MENU - SHARE
+// ======================================
+
+$('#actionShare').onclick = async () => {
+  if (!selectedNotes.size) return;
+
+  const records = selectedRecords();
+
+  if (records.some(n => n.locked)) {
+    if (!data.pin || prompt('Введите PIN') !== data.pin) {
+      alert('Неверный PIN');
+      return;
+    }
+  }
+
+  const text = records.map(n =>
+    `${n.title || 'Без названия'}\n\n${n.body || ''}`
+  ).join('\n\n----------------\n\n');
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: 'BEGENCHEKE',
+        text
+      });
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      alert('Текст скопирован');
+    } else {
+      prompt('Скопируйте текст:', text);
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      alert('Не удалось поделиться');
+    }
+  }
+};
+
+// ======================================
+// ALT MENU - DELETE
+// ======================================
+
+$('#actionDelete').onclick = () => {
+  if (!selectedNotes.size) return;
+
+  const records = selectedRecords();
+
+  if (records.some(n => n.locked)) {
+    if (!data.pin || prompt('Введите PIN') !== data.pin) {
+      alert('Неверный PIN');
+      return;
+    }
+  }
+
+  const count = selectedNotes.size;
+
+  if (!confirm(`Удалить заметки (${count})?`)) {
+    return;
+  }
+
+  data.notes = data.notes.filter(
+    n => !selectedNotes.has(n.id)
+  );
+
+  persist();
+  exitSelection();
+};
+
+// ======================================
+// ALT MENU - MORE
+// ======================================
+
+$('#actionMore').onclick = () => {
+  if (!selectionMode) return;
+
+  const choice = prompt(
+    'Дополнительные действия:\n' +
+    '1 — Выбрать все\n' +
+    '2 — Дублировать\n' +
+    '3 — Отмена'
+  );
+
+  if (choice === '1') {
+    const visible = data.notes.filter(n =>
+      (currentFolder === 'all' ||
+       (currentFolder === 'none' && !n.folder) ||
+       n.folder === currentFolder) &&
+      ((n.title || '') + ' ' +
+       (n.locked ? '' : (n.body || '')))
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    );
+
+    visible.forEach(n => selectedNotes.add(n.id));
+
+    updateSelection();
+    render();
+  }
+
+  if (choice === '2') {
+    const records = selectedRecords();
+
+    if (records.some(n => n.locked)) {
+      if (!data.pin || prompt('Введите PIN') !== data.pin) {
+        alert('Неверный PIN');
+        return;
+      }
+    }
+
+    records.forEach(n => {
+      data.notes.push({
+        ...n,
+        id: id(),
+        title: (n.title || 'Без названия') + ' (копия)',
+        created: now()
+      });
+    });
+
+    persist();
+    exitSelection();
+  }
+};
+
+// ======================================
 // ARAMA
+// ======================================
+
 $('#search').onclick = () => {
   if (section !== 'notes') {
     go('notes');
   }
 
-  let s = prompt('Поиск заметок', search);
+  const s = prompt('Поиск заметок', search);
 
   if (s !== null) {
     search = s;
+    exitSelection(false);
     render();
   }
 };
 
-// YENİ KAYIT
+// ======================================
+// YENI KAYIT
+// ======================================
+
 $('#fab').onclick = () => {
   if (section === 'notes') openNote();
   else if (section === 'money') form('money');
@@ -357,18 +753,32 @@ $('#fab').onclick = () => {
   else if (section === 'clients') form('clients');
 };
 
-// NOT AÇMA
+// ======================================
+// NOT DUZENLEME
+// ======================================
+
 function openNote(noteId) {
   let n = noteId
     ? data.notes.find(x => x.id === noteId)
     : null;
+
+  if (n?.locked) {
+    if (!data.pin || prompt('Введите PIN') !== data.pin) {
+      alert('Неверный PIN');
+      return;
+    }
+  }
 
   if (!n) {
     n = {
       id: id(),
       title: '',
       body: '',
-      created: now()
+      created: now(),
+      folder: currentFolder !== 'all' &&
+              currentFolder !== 'none'
+        ? currentFolder
+        : ''
     };
 
     data.notes.push(n);
@@ -387,17 +797,15 @@ function openNote(noteId) {
   }, 440);
 }
 
-// NOT KAYDETME
 function saveNote() {
   if (!editing) return;
 
-  let n = data.notes.find(x => x.id === editing);
+  const n = data.notes.find(x => x.id === editing);
 
   if (n) {
     n.title = $('#noteTitle').value;
     n.body = $('#noteBody').value;
     n.updated = now();
-
     persist();
   }
 }
@@ -421,7 +829,10 @@ function closeNote() {
 $('#back').onclick = closeNote;
 $('#save').onclick = closeNote;
 
-// PENCERE
+// ======================================
+// MODAL
+// ======================================
+
 function modal(html, onSubmit) {
   $('#modal').innerHTML = html;
   $('#modalWrap').classList.add('open');
@@ -436,12 +847,15 @@ function modal(html, onSubmit) {
   };
 }
 
-// GELİR, BORÇ VE MÜŞTERİ EKLEME
+// ======================================
+// MUHASEBE FORMU
+// ======================================
+
 function form(kind) {
   let fields = '';
   let title = '';
 
-  let currency = `
+  const currency = `
     <select name="currency">
       <option value="USD">Доллар ($)</option>
       <option value="EUR">Евро (€)</option>
@@ -458,72 +872,56 @@ function form(kind) {
         <option>Расход</option>
       </select>
 
-      <input
-        name="amount"
-        type="number"
-        min="0.01"
-        step="0.01"
-        placeholder="Сумма"
-        required
-      >
+      <input name="amount"
+             type="number"
+             min="0.01"
+             step="0.01"
+             placeholder="Сумма"
+             required>
 
       ${currency}
 
-      <textarea
-        name="description"
-        placeholder="Описание"
-      ></textarea>
+      <textarea name="description"
+                placeholder="Описание"></textarea>
     `;
   } else if (kind === 'debts') {
     title = 'Новый долг';
 
     fields = `
-      <input
-        name="person"
-        placeholder="Имя человека"
-        required
-      >
+      <input name="person"
+             placeholder="Имя человека"
+             required>
 
       <select name="kind">
         <option>Мне должны</option>
         <option>Я должен</option>
       </select>
 
-      <input
-        name="amount"
-        type="number"
-        min="0.01"
-        step="0.01"
-        placeholder="Сумма"
-        required
-      >
+      <input name="amount"
+             type="number"
+             min="0.01"
+             step="0.01"
+             placeholder="Сумма"
+             required>
 
       ${currency}
 
-      <textarea
-        name="description"
-        placeholder="Комментарий"
-      ></textarea>
+      <textarea name="description"
+                placeholder="Комментарий"></textarea>
     `;
   } else {
     title = 'Новый клиент';
 
     fields = `
-      <input
-        name="name"
-        placeholder="Имя клиента"
-        required
-      >
+      <input name="name"
+             placeholder="Имя клиента"
+             required>
 
-      <input
-        name="phone"
-        placeholder="Телефон"
-      >
+      <input name="phone"
+             placeholder="Телефон">
 
-      <textarea
-        name="details"
-        placeholder="Заметка / счёт"
-      ></textarea>
+      <textarea name="details"
+                placeholder="Заметка / счёт"></textarea>
     `;
   }
 
@@ -546,7 +944,7 @@ function form(kind) {
       </form>
     `,
     f => {
-      let obj = Object.fromEntries(f.entries());
+      const obj = Object.fromEntries(f.entries());
 
       if ('amount' in obj) {
         obj.amount = Number(obj.amount);
@@ -560,27 +958,27 @@ function form(kind) {
       persist();
 
       $('#modalWrap').classList.remove('open');
-
       render();
     }
   );
 }
 
+// ======================================
 // PIN
+// ======================================
+
 function pinForm() {
   modal(
     `
       <h2>Защита PIN</h2>
 
       <form>
-        <input
-          type="password"
-          name="pin"
-          inputmode="numeric"
-          pattern="[0-9]{4,8}"
-          placeholder="Новый PIN (4–8 цифр)"
-          required
-        >
+        <input type="password"
+               name="pin"
+               inputmode="numeric"
+               pattern="[0-9]{4,8}"
+               placeholder="Новый PIN (4–8 цифр)"
+               required>
 
         <div class="actions">
           <button type="button" class="cancel">
@@ -600,21 +998,22 @@ function pinForm() {
 
       $('#modalWrap').classList.remove('open');
 
-      alert(
-        'PIN сохранён. Защита PIN в браузере не заменяет шифрование.'
-      );
+      alert('PIN сохранён');
     }
   );
 }
 
-// YEDEK ALMA
+// ======================================
+// YEDEKLEME
+// ======================================
+
 function backup() {
-  let blob = new Blob(
+  const blob = new Blob(
     [JSON.stringify(data, null, 2)],
     { type: 'application/json' }
   );
 
-  let a = document.createElement('a');
+  const a = document.createElement('a');
 
   a.href = URL.createObjectURL(blob);
   a.download = 'BEGENCHEKE-backup.json';
@@ -625,53 +1024,55 @@ function backup() {
   }, 2000);
 }
 
-// YEDEK YÜKLEME
 async function importBackup(e) {
-  let f = e.target.files?.[0];
+  const f = e.target.files?.[0];
 
   if (!f) return;
 
   try {
-    let d = JSON.parse(await f.text());
+    const d = JSON.parse(await f.text());
 
-    if (
-      !['notes', 'money', 'debts', 'clients']
-        .every(k => Array.isArray(d[k]))
-    ) {
+    if (!['notes', 'money', 'debts', 'clients']
+      .every(k => Array.isArray(d[k]))) {
       throw Error();
     }
 
-    if (
-      !confirm(
-        'Mevcut kayıtlar değiştirilecek. Devam edilsin mi?'
-      )
-    ) {
+    if (!confirm(
+      'Mevcut kayıtlar değiştirilecek. Devam edilsin mi?'
+    )) {
       return;
     }
 
     data = d;
 
+    if (!Array.isArray(data.folders)) {
+      data.folders = [];
+    }
+
+    data.pin ??= '';
+
     persist();
+    exitSelection(false);
     render();
 
     alert('Yedek yüklendi');
-  } catch {
+  } catch (e) {
     alert('Geçersiz yedek dosyası');
   }
 }
 
-// PIN KONTROLÜ
+// ======================================
+// UYGULAMA PIN KONTROLU
+// ======================================
+
 function lock() {
   if (!data.pin) return;
 
-  let p = prompt('BEGENCHEKE PIN');
+  const p = prompt('BEGENCHEKE PIN');
 
   if (p !== data.pin) {
-    $('#content').innerHTML = `
-      <p class="empty">
-        PIN yanlış. Yeniden denemek için sayfayı açın.
-      </p>
-    `;
+    $('#content').innerHTML =
+      '<p class="empty">PIN yanlış. Yeniden deneyin.</p>';
 
     $('#fab').style.display = 'none';
     $('#menu').disabled = true;
@@ -679,11 +1080,16 @@ function lock() {
   }
 }
 
-// GERİ TUŞU
+// ======================================
+// GERI TUSU
+// ======================================
+
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if ($('#editor').classList.contains('open')) {
       closeNote();
+    } else if (selectionMode) {
+      exitSelection();
     } else if (
       document.body.classList.contains('drawerOpen')
     ) {
@@ -694,11 +1100,17 @@ window.addEventListener('keydown', e => {
   }
 });
 
-// UYGULAMAYI BAŞLAT
+// ======================================
+// BASLAT
+// ======================================
+
 go('notes');
 lock();
 
-// OFFLINE DESTEĞİ
+// ======================================
+// OFFLINE
+// ======================================
+
 if (
   'serviceWorker' in navigator &&
   location.protocol.startsWith('http')
