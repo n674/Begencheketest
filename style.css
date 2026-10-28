@@ -599,3 +599,26 @@ body:not(.selectionMode) header h1 {
 #content .folder-tabs {
   display: none !important;
 }
+/* SAMSUNG NOTES - SMOOTH HEADER FIX */
+
+#largeNotesHeader {
+  height: 235px;
+  flex-shrink: 0;
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+header h1 {
+  opacity: 0;
+}
+
+body.notesCollapsed header h1 {
+  opacity: 1;
+}
+
+#content .folderBar,
+#content .folderTabs,
+#content .folderFilters {
+  display: none !important;
+}
