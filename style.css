@@ -629,3 +629,221 @@ body.selectionMode #largeNotesHeader {
     transition-duration: .01ms !important;
   }
 }
+/* =========================================
+   BEGENCHEKE - SAMSUNG NOTES TASARIMI
+   SABIT BASLIK / ANIMASYONSUZ
+   ========================================= */
+
+/* GENEL RENKLER */
+
+:root {
+  --bg: #09090b;
+  --card: #202022;
+  --muted: #9ca8bf;
+  --accent: #169cf0;
+}
+
+html {
+  scroll-behavior: auto !important;
+}
+
+body {
+  background: #09090b !important;
+  color: #ffffff;
+}
+
+/* UST MENU */
+
+header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+
+  height: calc(96px + env(safe-area-inset-top)) !important;
+
+  padding:
+    env(safe-area-inset-top)
+    24px
+    0 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  gap: 18px !important;
+
+  background: #09090b !important;
+}
+
+header h1,
+#heading {
+  flex: 1 !important;
+
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+
+  font-size: 22px !important;
+  font-weight: 700 !important;
+
+  white-space: nowrap !important;
+
+  transform: none !important;
+  transition: none !important;
+
+  color: #ffffff !important;
+}
+
+#menu,
+#search {
+  background: transparent !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 8px !important;
+}
+
+#menu svg,
+#search svg {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* BUYUK BASLIK VE ANIMASYON KAPALI */
+
+#largeNotesHeader,
+body.notesPage #largeNotesHeader,
+body:not(.notesPage) #largeNotesHeader {
+  display: none !important;
+}
+
+/* ANA ICERIK */
+
+main,
+#content {
+  padding: 12px 20px 115px !important;
+  min-height: 75vh;
+}
+
+/* NOTLAR BASLIGI */
+
+body.notesPage #content::before {
+  content: "Мои заметки";
+
+  display: block;
+
+  margin: 12px 8px 22px;
+
+  color: #9ca8bf;
+
+  font-size: 19px;
+  font-weight: 400;
+
+  line-height: 1.5;
+}
+
+/* NOT KARTLARI - IKI SUTUN */
+
+.grid {
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr)) !important;
+
+  gap: 16px !important;
+
+  align-items: start !important;
+}
+
+/* HER NOT */
+
+.noteCard {
+  position: relative !important;
+
+  min-width: 0 !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  background: #202022 !important;
+
+  border-radius: 21px !important;
+
+  overflow: hidden !important;
+
+  -webkit-user-select: none;
+  user-select: none;
+
+  transition: none !important;
+}
+
+/* NOTUN ICERIGI */
+
+.notePreview {
+  height: 185px !important;
+  min-height: 185px !important;
+
+  background: transparent !important;
+
+  border-radius: 0 !important;
+
+  padding: 28px 23px 10px !important;
+
+  font-size: 17px !important;
+  line-height: 1.5 !important;
+
+  color: #f4f4f4 !important;
+
+  overflow: hidden !important;
+  overflow-wrap: anywhere !important;
+
+  white-space: pre-wrap !important;
+}
+
+/* NOT BASLIGI */
+
+.noteLabel {
+  order: -1 !important;
+
+  margin: 0 !important;
+
+  padding: 24px 23px 0 !important;
+
+  font-size: 18px !important;
+  font-weight: 500 !important;
+
+  line-height: 1.35 !important;
+
+  color: #ffffff !important;
+
+  text-align: left !important;
+
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* TARIH EN ALTTA */
+
+.noteDate {
+  margin-top: auto !important;
+
+  padding: 0 23px 20px !important;
+
+  font-size: 12px !important;
+  font-weight: 400 !important;
+
+  color: #9ca8bf !important;
+
+  text-align: left !important;
+
+  white-space: nowrap !important;
+}
+
+/* KARTLARIN BOYU */
+
+.noteCard {
+  height: 255px !important;
+}
+
+/* BOS NOTLAR */
