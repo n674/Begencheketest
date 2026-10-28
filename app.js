@@ -79,7 +79,7 @@ const icons = {
   clients: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
   cash: '<rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18M7 3h12"/><circle cx="15" cy="15.5" r="1.5"/>',
   reports: '<path d="M4 20V11M10 20V5M16 20v-9M22 20V8"/>',
-  settings: '<circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.3 2 .9 2.1-1.1 2.8 2.8-1.1 2.1.9 2L24 11v3l-2.7.6-.9-2 1.1-2.1-2.8-2.8-2.1 1.1-2 .9L14 24h-4l-.6-2.7-2-.9-2.1 1.1-2.8-2.8 1.1-2.1-.9-2 1.1-2.1L0 14v-3l2.7-.6.9-2-1.1-2.1 2.8-2.8 2.1 1.1 2-.9z" transform="translate(1 1) scale(.91)"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.3 2 .9 2.1-1.1 2.8 2.8-1.1 2.1.9 2L24 11v3l-2.7.6-.9-2-1.1-2.1-2.8-2.8-2.1 1.1-2 .9L14 24h-4l-.6-2.7-2-.9-2.1 1.1-2 .9z" transform="translate(1 1) scale(.91)"/>',
   move: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 14h9m-3-3 3 3-3 3"/>',
   lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
@@ -152,6 +152,14 @@ function updateNoteCount() {
   largeCount.textContent = noteCountText(data.notes.length);
 }
 
+/*
+ * BASLIK ANIMASYONU DUZELTILDI
+ *
+ * Buyuk baslik sayfayla birlikte yukari kayar.
+ * Kucuk baslik ancak buyuk baslik ust cubugun
+ * arkasina girdiginde gorunmeye baslar.
+ */
+
 function updateHeader() {
   const isNotes = section === 'notes';
 
@@ -165,17 +173,24 @@ function updateHeader() {
 
   largeHeader.style.display = '';
 
-  /*
-   * Buyuk baslik normal sayfa akisi icinde kalir.
-   * Kaydirildikca kendiliginden yukari gider.
-   * Bosluk olusturan translateY kullanilmaz.
-   */
-  largeHeader.style.transform = '';
+  largeHeader.style.transform = 'none';
   largeHeader.style.opacity = '1';
 
-  const progress = Math.min(
-    Math.max(window.scrollY / 105, 0),
-    1
+  const rect = largeHeader.getBoundingClientRect();
+
+  const headerBottom = document
+    .querySelector('header')
+    .getBoundingClientRect()
+    .bottom;
+
+  const distance = 45;
+
+  const progress = Math.max(
+    0,
+    Math.min(
+      1,
+      (headerBottom + distance - rect.bottom) / distance
+    )
   );
 
   smallTitle.style.opacity = String(progress);
