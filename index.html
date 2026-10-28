@@ -2,14 +2,28 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
   <meta name="theme-color" content="#090d1d">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
 
   <link rel="apple-touch-icon" href="./icon.png">
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=13">
+
+  <link rel="stylesheet" href="./style.css?v=15">
 
   <title>BEGENCHEKE</title>
 </head>
@@ -17,85 +31,142 @@
 <body>
   <div id="app">
 
+    <!-- UST MENU -->
     <header>
-      <button id="menu" aria-label="Меню">☰</button>
+      <button
+        id="menu"
+        type="button"
+        aria-label="Меню"
+      >☰</button>
+
       <h1 id="heading">Все заметки</h1>
-      <button id="search" aria-label="Поиск">⌕</button>
+
+      <button
+        id="search"
+        type="button"
+        aria-label="Поиск"
+      >⌕</button>
     </header>
 
-    <!-- Uzun basma seçim başlığı -->
+    <!-- COKLU SECIM UST CUBUGU -->
     <div id="selectionBar">
-      <span id="selectionCount">1</span>
-      <button id="selectionCancel">Cancel</button>
+      <span id="selectionCount">0 выбрано</span>
+
+      <button
+        id="selectionCancel"
+        type="button"
+      >Отмена</button>
     </div>
-<!-- Samsung Notes buyuk baslik -->
-<div id="largeNotesHeader">
-  <div class="largeNotesTitle">Все заметки</div>
-  <div id="largeNotesCount">0 заметок</div>
-</div>
+
+    <!-- SAMSUNG NOTES BUYUK BASLIK -->
+    <div id="largeNotesHeader">
+      <div class="largeNotesTitle">
+        Все заметки
+      </div>
+
+      <div id="largeNotesCount">
+        0 заметок
+      </div>
+    </div>
+
+    <!-- ANA ICERIK -->
     <main id="content"></main>
 
-    <button id="fab" aria-label="Добавить">✎</button>
+    <!-- YENI NOT DUGMESI -->
+    <button
+      id="fab"
+      type="button"
+      aria-label="Добавить"
+    >✎</button>
 
-    <!-- Samsung Notes tarzı alt menü -->
+    <!-- COKLU SECIM ALT MENUSU -->
     <div id="selectionActions">
-      <button id="actionMove">
+
+      <button id="actionMove" type="button">
         <span class="actionIcon">▣</span>
-        <span>Move</span>
+        <span>Переместить</span>
       </button>
 
-      <button id="actionLock">
+      <button id="actionLock" type="button">
         <span class="actionIcon">♙</span>
-        <span>Lock</span>
+        <span>Защитить</span>
       </button>
 
-      <button id="actionShare">
+      <button id="actionShare" type="button">
         <span class="actionIcon">↗</span>
-        <span>Share</span>
+        <span>Поделиться</span>
       </button>
 
-      <button id="actionDelete">
+      <button id="actionDelete" type="button">
         <span class="actionIcon">▤</span>
-        <span>Delete</span>
+        <span>Удалить</span>
       </button>
 
-      <button id="actionMore">
+      <button id="actionMore" type="button">
         <span class="actionIcon">⋮</span>
-        <span>More</span>
+        <span>Ещё</span>
       </button>
+
     </div>
 
+    <!-- YAN MENU KARARTMA -->
     <div id="shade"></div>
 
+    <!-- YAN MENU -->
     <aside id="drawer">
       <div class="drawerTop">
         <b>BEGENCHEKE</b>
-        <span id="closeDrawer">✕</span>
+        <button
+          id="closeDrawer"
+          type="button"
+          aria-label="Закрыть меню"
+        >✕</button>
       </div>
+
       <nav id="nav"></nav>
     </aside>
 
+    <!-- NOT DUZENLEME EKRANI -->
     <section id="editor">
       <div class="editorBar">
-        <button id="back">‹</button>
+        <button
+          id="back"
+          type="button"
+          aria-label="Назад"
+        >‹</button>
+
         <span>Заметка</span>
-        <button id="save">✓</button>
+
+        <button
+          id="save"
+          type="button"
+          aria-label="Сохранить"
+        >✓</button>
       </div>
 
-      <input id="noteTitle" placeholder="Название">
-      <textarea id="noteBody" placeholder="Начните писать..."></textarea>
+      <input
+        id="noteTitle"
+        type="text"
+        placeholder="Название"
+      >
+
+      <textarea
+        id="noteBody"
+        placeholder="Начните писать..."
+      ></textarea>
 
       <div class="editorFooter">
         BEGENCHEKE · Заметки
       </div>
     </section>
 
+    <!-- MODAL PENCERE -->
     <div id="modalWrap">
       <div id="modal"></div>
     </div>
 
   </div>
 
-  <script src="./app.js?v=13"></script>
+  <script src="./app.js?v=15"></script>
 </body>
 </html>
