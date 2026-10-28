@@ -554,3 +554,11 @@ body.selectionMode main {
   align-items: center;
   line-height: 1.3;
 }
+/* GEREKSIZ NOT BASLIGI VE FILTRELERI GIZLE */
+
+#content > .sub,
+#content .folderBar,
+#content .folderTabs,
+#content .folderFilters {
+  display: none !important;
+}
