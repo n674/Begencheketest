@@ -1,4 +1,4 @@
-const CACHE = 'begencheke-pwa-v11';
+const CACHE = 'begencheke-pwa-v12';
 
 const FILES = [
   './',
