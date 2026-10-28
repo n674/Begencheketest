@@ -1250,7 +1250,9 @@ const label = labels[section];
       1
     );
 
-    largeHeader.style.opacity = String(1 - progress);
+largeHeader.style.opacity = String(1 - progress);
+largeHeader.style.transform =
+  `translateY(-${progress * 110}px)`;
     smallTitle.style.opacity = String(progress);
   }
 
