@@ -622,3 +622,44 @@ body.notesCollapsed header h1 {
 #content .folderFilters {
   display: none !important;
 }
+/* SAMSUNG NOTES — HEADER ANIMATION */
+
+#largeNotesHeader {
+  position: relative;
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  will-change: opacity;
+  pointer-events: none;
+}
+
+.largeNotesTitle {
+  font-size: 38px;
+  font-weight: 750;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+#largeNotesCount {
+  margin-top: 14px;
+  font-size: 17px;
+  color: #999999;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+#heading {
+  opacity: 0;
+  transition: opacity 0.12s linear;
+}
+
+body {
+  overflow-x: hidden;
+}
