@@ -1119,3 +1119,99 @@ if (
     .register('./sw.js')
     .catch(() => {});
 }
+/* BEGENCHEKE — PREMIUM SVG ICONS */
+
+(() => {
+  const icons = {
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    search: '<circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+    notes: '<rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M12 8h5M12 12h5M12 16h4"/>',
+    money: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="12" cy="14.5" r="2"/>',
+    debts: '<path d="M5 3h14v18l-3-2-4 2-4-2-3 2zM9 8h6M9 12h6"/>',
+    clients: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+    cash: '<rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18M7 3h12"/><circle cx="15" cy="15.5" r="1.5"/>',
+    reports: '<path d="M4 20V11M10 20V5M16 20v-9M22 20V8"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.3 2 .9 2.1-1.1 2.8 2.8-1.1 2.1.9 2L24 11v3l-2.7.6-.9 2 1.1 2.1-2.8 2.8-2.1-1.1-2 .9L14 24h-4l-.6-2.7-2-.9-2.1 1.1-2.8-2.8 1.1-2.1-.9-2L0 14v-3l2.7-.6.9-2-1.1-2.1 2.8-2.8 2.1 1.1 2-.9z" transform="translate(1 1) scale(.91)"/>',
+    move: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 14h9m-3-3 3 3-3 3"/>',
+    lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1"/>',
+    share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
+    delete: '<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',
+    more: '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>',
+    add: '<path d="m5 19 4-.8L20 7a2.1 2.1 0 0 0-3-3L6 15zM14 7l3 3"/>'
+  };
+
+  const svg = name => `
+    <svg xmlns="http://www.w3.org/2000/svg"
+         width="24" height="24"
+         viewBox="0 0 24 24"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="1.8"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         aria-hidden="true">
+      ${icons[name]}
+    </svg>
+  `;
+
+  const setIcon = (selector, name) => {
+    const el = document.querySelector(selector);
+    if (el) el.innerHTML = svg(name);
+  };
+
+  function updateIcons() {
+    setIcon('#menu', 'menu');
+    setIcon('#search', 'search');
+
+    const fab = document.querySelector('#fab');
+    if (fab && fab.textContent.trim() === '✎') {
+      fab.innerHTML = svg('add');
+    }
+
+    const sectionIcons = [
+      'notes', 'money', 'debts', 'clients',
+      'cash', 'reports', 'settings'
+    ];
+
+    document.querySelectorAll('#nav button').forEach(button => {
+      const section = button.dataset.section;
+      if (!sectionIcons.includes(section)) return;
+
+      const label = button.textContent.trim()
+        .replace(/^[▣$▤♙⚙]\s*/, '');
+
+      button.innerHTML = svg(section) +
+        '<span>' + label + '</span>';
+    });
+
+    [
+      ['#actionMove', 'move'],
+      ['#actionLock', 'lock'],
+      ['#actionShare', 'share'],
+      ['#actionDelete', 'delete'],
+      ['#actionMore', 'more']
+    ].forEach(([selector, name]) => {
+      const el = document.querySelector(selector);
+      const icon = el?.querySelector('.actionIcon');
+      if (icon) icon.innerHTML = svg(name);
+    });
+  }
+
+  updateIcons();
+
+  const nav = document.querySelector('#nav');
+  if (nav) {
+    new MutationObserver(updateIcons).observe(nav, {
+      childList: true
+    });
+  }
+
+  const fab = document.querySelector('#fab');
+  if (fab) {
+    new MutationObserver(() => {
+      if (fab.textContent.trim() === '✎') {
+        fab.innerHTML = svg('add');
+      }
+    }).observe(fab, { childList: true });
+  }
+})();
