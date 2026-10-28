@@ -1222,49 +1222,44 @@ const label = labels[section];
     }).observe(fab, { childList: true });
   }
 })();
-/* SAMSUNG NOTES - SMOOTH SCROLL */
+/* SAMSUNG NOTES - SMOOTH HEADER ANIMATION */
 
 (() => {
-  const large = document.getElementById('largeNotesHeader');
-  const small = document.getElementById('heading');
-  const count = document.getElementById('largeNotesCount');
+  const largeHeader = document.getElementById('largeNotesHeader');
+  const smallTitle = document.getElementById('heading');
 
-  if (!large || !small || !count) return;
+  if (!largeHeader || !smallTitle) return;
 
-  let scheduled = false;
+  const distance = 220;
+  let ticking = false;
 
-  function update() {
-    scheduled = false;
+  function updateHeader() {
+    ticking = false;
 
     const isNotes = section === 'notes';
-    large.style.display = isNotes ? 'flex' : 'none';
+
+    largeHeader.style.display = isNotes ? '' : 'none';
 
     if (!isNotes) {
-      small.style.opacity = '1';
+      smallTitle.style.opacity = '1';
       return;
     }
 
-    const y = Math.max(0, window.scrollY);
-    const progress = Math.min(y / 180, 1);
+    const progress = Math.min(
+      Math.max(window.scrollY / distance, 0),
+      1
+    );
 
-    large.style.opacity = String(1 - progress);
-    small.style.setProperty('opacity', String(progress), 'important');
-
-    count.textContent = `${data.notes.length} заметок`;
+    largeHeader.style.opacity = String(1 - progress);
+    smallTitle.style.opacity = String(progress);
   }
 
   window.addEventListener('scroll', () => {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(update);
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(updateHeader);
+    }
   }, { passive: true });
 
-  const previousRender = render;
-
-  render = function (...args) {
-    previousRender(...args);
-    requestAnimationFrame(update);
-  };
-
-  update();
+  updateHeader();
 })();
