@@ -1224,3 +1224,69 @@ const label = labels[section];
     }).observe(fab, { childList: true });
   }
 })();
+/* SAMSUNG NOTES - SCROLL HEADER ANIMATION */
+
+(() => {
+  const largeHeader = document.getElementById('largeNotesHeader');
+  const largeCount = document.getElementById('largeNotesCount');
+  const smallTitle = document.getElementById('heading');
+
+  if (!largeHeader || !largeCount || !smallTitle) return;
+
+  const MAX_SCROLL = 235;
+  let ticking = false;
+
+  function updateHeader() {
+    ticking = false;
+
+    const isNotes = section === 'notes';
+
+    largeHeader.style.display = isNotes ? 'flex' : 'none';
+
+    if (!isNotes) {
+      smallTitle.style.setProperty('opacity', '1', 'important');
+      return;
+    }
+
+    const progress = Math.min(
+      Math.max(window.scrollY, 0) / MAX_SCROLL,
+      1
+    );
+
+    largeHeader.style.opacity = String(1 - progress);
+
+    smallTitle.style.setProperty(
+      'opacity',
+      String(progress),
+      'important'
+    );
+
+    const count = data.notes.length;
+
+    largeCount.textContent =
+      count + ' ' +
+      (count % 10 === 1 && count % 100 !== 11
+        ? 'заметка'
+        : count % 10 >= 2 &&
+          count % 10 <= 4 &&
+          (count % 100 < 12 || count % 100 > 14)
+        ? 'заметки'
+        : 'заметок');
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(updateHeader);
+    }
+  }, { passive: true });
+
+  const originalRender = render;
+
+  render = function (...args) {
+    originalRender(...args);
+    requestAnimationFrame(updateHeader);
+  };
+
+  updateHeader();
+})();
