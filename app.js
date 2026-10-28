@@ -10,6 +10,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   "'": '&#39;'
 }[c]));
 
+/* VERI ANAHTARI - DEGISTIRME */
 const KEY = 'begencheke_pwa_data_v1';
 
 let data;
@@ -25,11 +26,11 @@ for (const k of ['notes', 'money', 'debts', 'clients']) {
 }
 
 data.pin ??= '';
-data.folders ??= [];
+if (!Array.isArray(data.folders)) data.folders = [];
 
-const persist = () => {
+function persist() {
   localStorage.setItem(KEY, JSON.stringify(data));
-};
+}
 
 const id = () =>
   Date.now().toString(36) +
@@ -55,18 +56,64 @@ let editing = null;
 let saveTimer = null;
 
 let selectionMode = false;
-let selectedNotes = new Set();
-let currentFolder = 'all';
+const selectedNotes = new Set();
 
 const sections = [
-  ['notes', '▣', 'Все заметки'],
-  ['money', '$', 'Доходы / расходы'],
-  ['debts', '▤', 'Долги'],
-  ['clients', '♙', 'Клиенты'],
-  ['cash', '▣', 'Касса'],
-  ['reports', '▥', 'Отчёты'],
-  ['settings', '⚙', 'Настройки']
+  ['notes', 'Все заметки'],
+  ['money', 'Доходы / расходы'],
+  ['debts', 'Долги'],
+  ['clients', 'Клиенты'],
+  ['cash', 'Касса'],
+  ['reports', 'Отчёты'],
+  ['settings', 'Настройки']
 ];
+
+/* SVG IKONLAR */
+
+const icons = {
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  search: '<circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  notes: '<rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M12 8h5M12 12h5M12 16h4"/>',
+  money: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="12" cy="14.5" r="2"/>',
+  debts: '<path d="M5 3h14v18l-3-2-4 2-4-2-3 2zM9 8h6M9 12h6"/>',
+  clients: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+  cash: '<rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18M7 3h12"/><circle cx="15" cy="15.5" r="1.5"/>',
+  reports: '<path d="M4 20V11M10 20V5M16 20v-9M22 20V8"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.3 2 .9 2.1-1.1 2.8 2.8-1.1 2.1.9 2L24 11v3l-2.7.6-.9-2 1.1-2.1-2.8-2.8-2.1 1.1-2 .9L14 24h-4l-.6-2.7-2-.9-2.1 1.1-2.8-2.8 1.1-2.1-.9-2 1.1-2.1L0 14v-3l2.7-.6.9-2-1.1-2.1 2.8-2.8 2.1 1.1 2-.9z" transform="translate(1 1) scale(.91)"/>',
+  move: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 14h9m-3-3 3 3-3 3"/>',
+  lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
+  delete: '<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',
+  more: '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>',
+  add: '<path d="m5 19 4-.8L20 7a2.1 2.1 0 0 0-3-3L6 15zM14 7l3 3-3 3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>'
+};
+
+function svg(name) {
+  return `<svg xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true">${icons[name] || ''}</svg>`;
+}
+
+$('#menu').innerHTML = svg('menu');
+$('#search').innerHTML = svg('search');
+
+for (const [selector, icon] of [
+  ['#actionMove', 'move'],
+  ['#actionLock', 'lock'],
+  ['#actionShare', 'share'],
+  ['#actionDelete', 'delete'],
+  ['#actionMore', 'more']
+]) {
+  $(selector).querySelector('.actionIcon').innerHTML = svg(icon);
+}
+
+/* YAN MENU */
 
 function drawer(open) {
   document.body.classList.toggle('drawerOpen', open);
@@ -76,38 +123,120 @@ $('#menu').onclick = () => drawer(true);
 $('#shade').onclick = () => drawer(false);
 $('#closeDrawer').onclick = () => drawer(false);
 
+/* SAMSUNG NOTES BASLIK */
+
+const largeHeader = $('#largeNotesHeader');
+const smallTitle = $('#heading');
+const largeCount = $('#largeNotesCount');
+
+function noteCountText(count) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+
+  if (lastTwo >= 11 && lastTwo <= 14) {
+    return `${count} заметок`;
+  }
+
+  if (last === 1) {
+    return `${count} заметка`;
+  }
+
+  if (last >= 2 && last <= 4) {
+    return `${count} заметки`;
+  }
+
+  return `${count} заметок`;
+}
+
+function updateNoteCount() {
+  largeCount.textContent = noteCountText(data.notes.length);
+}
+
+function updateHeader() {
+  const isNotes = section === 'notes';
+
+  document.body.classList.toggle('notesPage', isNotes);
+
+  if (!isNotes) {
+    largeHeader.style.display = 'none';
+    smallTitle.style.opacity = '1';
+    return;
+  }
+
+  largeHeader.style.display = '';
+
+  /*
+   * Buyuk baslik normal sayfa akisi icinde kalir.
+   * Kaydirildikca kendiliginden yukari gider.
+   * Bosluk olusturan translateY kullanilmaz.
+   */
+  largeHeader.style.transform = '';
+  largeHeader.style.opacity = '1';
+
+  const progress = Math.min(
+    Math.max(window.scrollY / 105, 0),
+    1
+  );
+
+  smallTitle.style.opacity = String(progress);
+}
+
+let headerTicking = false;
+
+window.addEventListener('scroll', () => {
+  if (headerTicking) return;
+
+  headerTicking = true;
+
+  requestAnimationFrame(() => {
+    headerTicking = false;
+    updateHeader();
+  });
+}, { passive: true });
+
+/* BOLUM DEGISTIRME */
+
 function go(s) {
   exitSelection(false);
 
   section = s;
-  drawer(false);
   search = '';
 
-  $('#heading').textContent =
-    sections.find(x => x[0] === s)?.[2] || s;
+  drawer(false);
 
-  $('#fab').style.display =
-    ['notes', 'money', 'debts', 'clients'].includes(s)
-      ? 'block'
-      : 'none';
+  smallTitle.textContent =
+    sections.find(x => x[0] === s)?.[1] || s;
 
-  $('#fab').textContent = s === 'notes' ? '✎' : '+';
+  const canAdd = ['notes', 'money', 'debts', 'clients'].includes(s);
 
-  $('#nav').innerHTML = sections.map(([k, i, t]) =>
-    `<button class="${k === s ? 'active' : ''}" data-section="${k}">
-      ${i} &nbsp;${t}
-    </button>`
-  ).join('');
+  $('#fab').style.display = canAdd ? 'flex' : 'none';
+  $('#fab').innerHTML = svg(s === 'notes' ? 'add' : 'plus');
 
-  $('#nav').querySelectorAll('button').forEach(b => {
-    b.onclick = () => go(b.dataset.section);
+  $('#nav').innerHTML = sections.map(([key, label]) => `
+    <button
+      type="button"
+      class="${key === s ? 'active' : ''}"
+      data-section="${key}"
+    >
+      ${svg(key)}
+      <span>${esc(label)}</span>
+    </button>
+  `).join('');
+
+  $('#nav').querySelectorAll('button').forEach(button => {
+    button.onclick = () => go(button.dataset.section);
   });
 
+  window.scrollTo(0, 0);
+
   render();
+  updateHeader();
 }
 
+/* GENEL KART */
+
 function card(title, detail, remove) {
-  let el = document.createElement('div');
+  const el = document.createElement('div');
   el.className = 'card fade';
 
   el.innerHTML = `
@@ -117,31 +246,27 @@ function card(title, detail, remove) {
   `;
 
   if (remove) {
-    el.querySelector('button').onclick = () => {
-      if (confirm('Удалить запись?')) {
-        data[remove.table] =
-          data[remove.table].filter(x => x.id !== remove.id);
+    el.querySelector('.delete').onclick = () => {
+      if (!confirm('Удалить запись?')) return;
 
-        persist();
-        render();
-      }
+      data[remove.table] =
+        data[remove.table].filter(x => x.id !== remove.id);
+
+      persist();
+      render();
     };
   }
 
   return el;
 }
 
-// ======================================
-// SAMSUNG NOTES TARZI SECIM SISTEMI
-// ======================================
+/* COKLU SECIM */
 
 function enterSelection(noteId) {
   if (section !== 'notes') return;
 
   selectionMode = true;
   selectedNotes.add(noteId);
-
-  document.body.classList.add('selectionMode');
 
   updateSelection();
   render();
@@ -161,18 +286,22 @@ function exitSelection(shouldRender = true) {
 function updateSelection() {
   const count = selectedNotes.size;
 
-  $('#selectionCount').textContent =
-    `${count} выбрано`;
-
   document.body.classList.toggle(
     'selectionMode',
     selectionMode
   );
 
-  $('#actionMove').disabled = count === 0;
-  $('#actionLock').disabled = count === 0;
-  $('#actionShare').disabled = count === 0;
-  $('#actionDelete').disabled = count === 0;
+  $('#selectionCount').textContent = `${count} выбрано`;
+
+  for (const selector of [
+    '#actionMove',
+    '#actionLock',
+    '#actionShare',
+    '#actionDelete',
+    '#actionMore'
+  ]) {
+    $(selector).disabled = count === 0;
+  }
 }
 
 function toggleSelection(noteId) {
@@ -187,70 +316,16 @@ function toggleSelection(noteId) {
     return;
   }
 
-  updateSelection();
   render();
 }
-
-$('#selectionCancel').onclick = () => exitSelection();
 
 function selectedRecords() {
   return data.notes.filter(n => selectedNotes.has(n.id));
 }
 
-// ======================================
-// KLASOR SISTEMI
-// ======================================
+$('#selectionCancel').onclick = () => exitSelection();
 
-function folderName(n) {
-  return n.folder || 'Без папки';
-}
-
-function renderFolderBar(container) {
-  const wrap = document.createElement('div');
-
-  wrap.style.cssText = `
-    display:flex;
-    gap:8px;
-    overflow-x:auto;
-    padding:4px 0 16px;
-    scrollbar-width:none;
-  `;
-
-  const names = [
-    ['all', 'Все'],
-    ['none', 'Без папки'],
-    ...data.folders.map(f => [f, f])
-  ];
-
-  names.forEach(([value, label]) => {
-    const b = document.createElement('button');
-
-    b.textContent = label;
-
-    b.style.cssText = `
-      flex-shrink:0;
-      padding:9px 14px;
-      border-radius:20px;
-      background:${currentFolder === value ? '#238bdf' : '#242b3c'};
-      color:white;
-      font-size:13px;
-    `;
-
-    b.onclick = () => {
-      currentFolder = value;
-      exitSelection(false);
-      render();
-    };
-
-    wrap.append(b);
-  });
-
-  container.append(wrap);
-}
-
-// ======================================
-// NOT KARTLARI
-// ======================================
+/* NOT KARTLARI */
 
 function createNoteCard(n) {
   const el = document.createElement('div');
@@ -263,7 +338,7 @@ function createNoteCard(n) {
 
   const preview = n.locked
     ? '🔒 Заблокированная заметка'
-    : (n.body || n.title);
+    : (n.body || n.title || '');
 
   const title = n.locked
     ? '🔒 ' + (n.title || 'Без названия')
@@ -274,17 +349,9 @@ function createNoteCard(n) {
       ${selectedNotes.has(n.id) ? '✓' : ''}
     </span>
 
-    <div class="notePreview">
-      ${esc(preview)}
-    </div>
-
-    <div class="noteLabel">
-      ${esc(title)}
-    </div>
-
-    <div class="noteDate">
-      ${esc(n.created)}
-    </div>
+    <div class="notePreview">${esc(preview)}</div>
+    <div class="noteLabel">${esc(title)}</div>
+    <div class="noteDate">${esc(n.created)}</div>
   `;
 
   let pressTimer = null;
@@ -292,17 +359,14 @@ function createNoteCard(n) {
   let startX = 0;
   let startY = 0;
 
-  const cancelPress = () => {
+  function cancelPress() {
     clearTimeout(pressTimer);
     pressTimer = null;
-  };
+  }
 
   el.addEventListener('pointerdown', e => {
     if (selectionMode) return;
-
-    if (e.pointerType === 'mouse' && e.button !== 0) {
-      return;
-    }
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
 
     startX = e.clientX;
     startY = e.clientY;
@@ -344,7 +408,7 @@ function createNoteCard(n) {
     }
   });
 
-  el.onclick = e => {
+  el.onclick = () => {
     if (longPressed) {
       longPressed = false;
       return;
@@ -360,49 +424,40 @@ function createNoteCard(n) {
   return el;
 }
 
-// ======================================
-// ANA EKRAN
-// ======================================
+/* ANA EKRAN */
 
 function render() {
   const c = $('#content');
   c.replaceChildren();
 
   if (section === 'notes') {
-    const sub = document.createElement('div');
-    sub.className = 'sub';
-    sub.textContent = 'Мои заметки';
-    c.append(sub);
+    updateNoteCount();
 
-    const grid = document.createElement('div');
-    grid.className = 'grid';
-    grid.id = 'noteGrid';
-    c.append(grid);
-
-    let notes = data.notes.filter(n => {
-      const matchesSearch =
-        ((n.title || '') + ' ' + (n.locked ? '' : (n.body || '')))
-          .toLowerCase()
-          .includes(search.toLowerCase());
-
-      const matchesFolder =
-        currentFolder === 'all' ||
-        (currentFolder === 'none' && !n.folder) ||
-        n.folder === currentFolder;
-
-      return matchesSearch && matchesFolder;
+    const notes = data.notes.filter(n => {
+      return (
+        (n.title || '') + ' ' +
+        (n.locked ? '' : (n.body || ''))
+      ).toLowerCase().includes(search.toLowerCase());
     }).slice().reverse();
 
     if (!notes.length) {
       const empty = document.createElement('p');
       empty.className = 'empty';
-      empty.textContent = 'Заметок пока нет.';
+      empty.textContent = search
+        ? 'Ничего не найдено.'
+        : 'Заметок пока нет.';
       c.append(empty);
-    }
+    } else {
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+      grid.id = 'noteGrid';
 
-    notes.forEach(n => {
-      grid.append(createNoteCard(n));
-    });
+      notes.forEach(n => {
+        grid.append(createNoteCard(n));
+      });
+
+      c.append(grid);
+    }
 
     updateSelection();
     return;
@@ -453,8 +508,7 @@ function render() {
   }
 
   if (section === 'cash' || section === 'reports') {
-    c.innerHTML =
-      '<div class="sub">' +
+    c.innerHTML = '<div class="sub">' +
       (section === 'cash' ? 'Касса' : 'Отчёты') +
       '</div>';
 
@@ -531,9 +585,7 @@ function render() {
   }
 }
 
-// ======================================
-// ALT MENU - MOVE
-// ======================================
+/* SECILEN NOTLARI TASI */
 
 $('#actionMove').onclick = () => {
   if (!selectedNotes.size) return;
@@ -561,23 +613,17 @@ $('#actionMove').onclick = () => {
   alert('Заметки перемещены');
 };
 
-// ======================================
-// ALT MENU - LOCK
-// ======================================
+/* NOTLARI KILITLE */
 
 $('#actionLock').onclick = () => {
   if (!selectedNotes.size) return;
 
   if (!data.pin) {
-    alert(
-      'Сначала установите PIN в настройках.'
-    );
+    alert('Сначала установите PIN в настройках.');
     return;
   }
 
-  const pin = prompt('Введите PIN');
-
-  if (pin !== data.pin) {
+  if (prompt('Введите PIN') !== data.pin) {
     alert('Неверный PIN');
     return;
   }
@@ -598,9 +644,7 @@ $('#actionLock').onclick = () => {
   );
 };
 
-// ======================================
-// ALT MENU - SHARE
-// ======================================
+/* PAYLAS */
 
 $('#actionShare').onclick = async () => {
   if (!selectedNotes.size) return;
@@ -637,9 +681,7 @@ $('#actionShare').onclick = async () => {
   }
 };
 
-// ======================================
-// ALT MENU - DELETE
-// ======================================
+/* NOT SIL */
 
 $('#actionDelete').onclick = () => {
   if (!selectedNotes.size) return;
@@ -655,9 +697,7 @@ $('#actionDelete').onclick = () => {
 
   const count = selectedNotes.size;
 
-  if (!confirm(`Удалить заметки (${count})?`)) {
-    return;
-  }
+  if (!confirm(`Удалить заметки (${count})?`)) return;
 
   data.notes = data.notes.filter(
     n => !selectedNotes.has(n.id)
@@ -667,9 +707,7 @@ $('#actionDelete').onclick = () => {
   exitSelection();
 };
 
-// ======================================
-// ALT MENU - MORE
-// ======================================
+/* DIGER ISLEMLER */
 
 $('#actionMore').onclick = () => {
   if (!selectionMode) return;
@@ -682,19 +720,12 @@ $('#actionMore').onclick = () => {
   );
 
   if (choice === '1') {
-    const visible = data.notes.filter(n =>
-      (currentFolder === 'all' ||
-       (currentFolder === 'none' && !n.folder) ||
-       n.folder === currentFolder) &&
-      ((n.title || '') + ' ' +
-       (n.locked ? '' : (n.body || '')))
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    );
+    data.notes.filter(n => (
+      (n.title || '') + ' ' +
+      (n.locked ? '' : (n.body || ''))
+    ).toLowerCase().includes(search.toLowerCase()))
+      .forEach(n => selectedNotes.add(n.id));
 
-    visible.forEach(n => selectedNotes.add(n.id));
-
-    updateSelection();
     render();
   }
 
@@ -722,27 +753,21 @@ $('#actionMore').onclick = () => {
   }
 };
 
-// ======================================
-// ARAMA
-// ======================================
+/* ARAMA */
 
 $('#search').onclick = () => {
-  if (section !== 'notes') {
-    go('notes');
-  }
+  if (section !== 'notes') go('notes');
 
-  const s = prompt('Поиск заметок', search);
+  const value = prompt('Поиск заметок', search);
 
-  if (s !== null) {
-    search = s;
+  if (value !== null) {
+    search = value;
     exitSelection(false);
     render();
   }
 };
 
-// ======================================
-// YENI KAYIT
-// ======================================
+/* EKLEME DUGMESI */
 
 $('#fab').onclick = () => {
   if (section === 'notes') openNote();
@@ -751,9 +776,7 @@ $('#fab').onclick = () => {
   else if (section === 'clients') form('clients');
 };
 
-// ======================================
-// NOT DUZENLEME
-// ======================================
+/* NOT DUZENLEME */
 
 function openNote(noteId) {
   let n = noteId
@@ -773,10 +796,7 @@ function openNote(noteId) {
       title: '',
       body: '',
       created: now(),
-      folder: currentFolder !== 'all' &&
-              currentFolder !== 'none'
-        ? currentFolder
-        : ''
+      folder: ''
     };
 
     data.notes.push(n);
@@ -785,14 +805,16 @@ function openNote(noteId) {
 
   editing = n.id;
 
-  $('#noteTitle').value = n.title;
-  $('#noteBody').value = n.body;
+  $('#noteTitle').value = n.title || '';
+  $('#noteBody').value = n.body || '';
 
   $('#editor').classList.add('open');
 
   setTimeout(() => {
-    $('#noteTitle').focus({ preventScroll: true });
-  }, 440);
+    if ($('#editor').classList.contains('open')) {
+      $('#noteTitle').focus({ preventScroll: true });
+    }
+  }, 380);
 }
 
 function saveNote() {
@@ -821,15 +843,14 @@ function closeNote() {
   editing = null;
 
   $('#editor').classList.remove('open');
+
   render();
 }
 
 $('#back').onclick = closeNote;
 $('#save').onclick = closeNote;
 
-// ======================================
-// MODAL
-// ======================================
+/* MODAL */
 
 function modal(html, onSubmit) {
   $('#modal').innerHTML = html;
@@ -845,9 +866,7 @@ function modal(html, onSubmit) {
   };
 }
 
-// ======================================
-// MUHASEBE FORMU
-// ======================================
+/* GELIR / GIDER / BORC / MUSTERI */
 
 function form(kind) {
   let fields = '';
@@ -871,24 +890,24 @@ function form(kind) {
       </select>
 
       <input name="amount"
-             type="number"
-             min="0.01"
-             step="0.01"
-             placeholder="Сумма"
-             required>
+        type="number"
+        min="0.01"
+        step="0.01"
+        placeholder="Сумма"
+        required>
 
       ${currency}
 
       <textarea name="description"
-                placeholder="Описание"></textarea>
+        placeholder="Описание"></textarea>
     `;
   } else if (kind === 'debts') {
     title = 'Новый долг';
 
     fields = `
       <input name="person"
-             placeholder="Имя человека"
-             required>
+        placeholder="Имя человека"
+        required>
 
       <select name="kind">
         <option>Мне должны</option>
@@ -896,114 +915,104 @@ function form(kind) {
       </select>
 
       <input name="amount"
-             type="number"
-             min="0.01"
-             step="0.01"
-             placeholder="Сумма"
-             required>
+        type="number"
+        min="0.01"
+        step="0.01"
+        placeholder="Сумма"
+        required>
 
       ${currency}
 
       <textarea name="description"
-                placeholder="Комментарий"></textarea>
+        placeholder="Комментарий"></textarea>
     `;
   } else {
     title = 'Новый клиент';
 
     fields = `
       <input name="name"
-             placeholder="Имя клиента"
-             required>
+        placeholder="Имя клиента"
+        required>
 
       <input name="phone"
-             placeholder="Телефон">
+        placeholder="Телефон">
 
       <textarea name="details"
-                placeholder="Заметка / счёт"></textarea>
+        placeholder="Заметка / счёт"></textarea>
     `;
   }
 
-  modal(
-    `
-      <h2>${title}</h2>
+  modal(`
+    <h2>${title}</h2>
 
-      <form>
-        ${fields}
+    <form>
+      ${fields}
 
-        <div class="actions">
-          <button type="button" class="cancel">
-            Отмена
-          </button>
+      <div class="actions">
+        <button type="button" class="cancel">
+          Отмена
+        </button>
 
-          <button type="submit">
-            Сохранить
-          </button>
-        </div>
-      </form>
-    `,
-    f => {
-      const obj = Object.fromEntries(f.entries());
+        <button type="submit">
+          Сохранить
+        </button>
+      </div>
+    </form>
+  `, f => {
+    const obj = Object.fromEntries(f.entries());
 
-      if ('amount' in obj) {
-        obj.amount = Number(obj.amount);
-      }
-
-      obj.id = id();
-      obj.created = now();
-
-      data[kind].push(obj);
-
-      persist();
-
-      $('#modalWrap').classList.remove('open');
-      render();
+    if ('amount' in obj) {
+      obj.amount = Number(obj.amount);
     }
-  );
+
+    obj.id = id();
+    obj.created = now();
+
+    data[kind].push(obj);
+
+    persist();
+
+    $('#modalWrap').classList.remove('open');
+    render();
+  });
 }
 
-// ======================================
-// PIN
-// ======================================
+/* PIN AYARLARI */
 
 function pinForm() {
-  modal(
-    `
-      <h2>Защита PIN</h2>
+  modal(`
+    <h2>Защита PIN</h2>
 
-      <form>
-        <input type="password"
-               name="pin"
-               inputmode="numeric"
-               pattern="[0-9]{4,8}"
-               placeholder="Новый PIN (4–8 цифр)"
-               required>
+    <form>
+      <input
+        type="password"
+        name="pin"
+        inputmode="numeric"
+        pattern="[0-9]{4,8}"
+        placeholder="Новый PIN (4–8 цифр)"
+        required>
 
-        <div class="actions">
-          <button type="button" class="cancel">
-            Отмена
-          </button>
+      <div class="actions">
+        <button type="button" class="cancel">
+          Отмена
+        </button>
 
-          <button type="submit">
-            Сохранить
-          </button>
-        </div>
-      </form>
-    `,
-    f => {
-      data.pin = f.get('pin');
+        <button type="submit">
+          Сохранить
+        </button>
+      </div>
+    </form>
+  `, f => {
+    data.pin = f.get('pin');
 
-      persist();
+    persist();
 
-      $('#modalWrap').classList.remove('open');
-
-      alert('PIN сохранён');
-    }
-  );
+    $('#modalWrap').classList.remove('open');
+    alert('PIN сохранён');
+  });
 }
 
-// ======================================
-// YEDEKLEME
-// ======================================
+/* YEDEKLEME */
 
 function backup() {
   const blob = new Blob(
@@ -1023,16 +1032,16 @@ function backup() {
 }
 
 async function importBackup(e) {
-  const f = e.target.files?.[0];
+  const file = e.target.files?.[0];
 
-  if (!f) return;
+  if (!file) return;
 
   try {
-    const d = JSON.parse(await f.text());
+    const d = JSON.parse(await file.text());
 
     if (!['notes', 'money', 'debts', 'clients']
       .every(k => Array.isArray(d[k]))) {
-      throw Error();
+      throw Error('Invalid backup');
     }
 
     if (!confirm(
@@ -1052,6 +1061,7 @@ async function importBackup(e) {
     persist();
     exitSelection(false);
     render();
+    updateNoteCount();
 
     alert('Yedek yüklendi');
   } catch (e) {
@@ -1059,16 +1069,14 @@ async function importBackup(e) {
   }
 }
 
-// ======================================
-// UYGULAMA PIN KONTROLU
-// ======================================
+/* UYGULAMA PIN KONTROLU */
 
 function lock() {
   if (!data.pin) return;
 
-  const p = prompt('BEGENCHEKE PIN');
+  const pin = prompt('BEGENCHEKE PIN');
 
-  if (p !== data.pin) {
+  if (pin !== data.pin) {
     $('#content').innerHTML =
       '<p class="empty">PIN yanlış. Yeniden deneyin.</p>';
 
@@ -1078,36 +1086,30 @@ function lock() {
   }
 }
 
-// ======================================
-// GERI TUSU
-// ======================================
+/* GERI TUSU */
 
 window.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    if ($('#editor').classList.contains('open')) {
-      closeNote();
-    } else if (selectionMode) {
-      exitSelection();
-    } else if (
-      document.body.classList.contains('drawerOpen')
-    ) {
-      drawer(false);
-    } else {
-      $('#modalWrap').classList.remove('open');
-    }
+  if (e.key !== 'Escape') return;
+
+  if ($('#editor').classList.contains('open')) {
+    closeNote();
+  } else if (selectionMode) {
+    exitSelection();
+  } else if (
+    document.body.classList.contains('drawerOpen')
+  ) {
+    drawer(false);
+  } else {
+    $('#modalWrap').classList.remove('open');
   }
 });
 
-// ======================================
-// BASLAT
-// ======================================
+/* BASLAT */
 
 go('notes');
 lock();
 
-// ======================================
-// OFFLINE
-// ======================================
+/* OFFLINE */
 
 if (
   'serviceWorker' in navigator &&
@@ -1117,151 +1119,3 @@ if (
     .register('./sw.js')
     .catch(() => {});
 }
-/* BEGENCHEKE — PREMIUM SVG ICONS */
-
-(() => {
-  const icons = {
-    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-    search: '<circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.5 4.5"/>',
-    notes: '<rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M12 8h5M12 12h5M12 16h4"/>',
-    money: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="12" cy="14.5" r="2"/>',
-    debts: '<path d="M5 3h14v18l-3-2-4 2-4-2-3 2zM9 8h6M9 12h6"/>',
-    clients: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
-    cash: '<rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18M7 3h12"/><circle cx="15" cy="15.5" r="1.5"/>',
-    reports: '<path d="M4 20V11M10 20V5M16 20v-9M22 20V8"/>',
-    settings: '<circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.3 2 .9 2.1-1.1 2.8 2.8-1.1 2.1.9 2L24 11v3l-2.7.6-.9 2 1.1 2.1-2.8 2.8-2.1-1.1-2 .9L14 24h-4l-.6-2.7-2-.9-2.1 1.1-2.8-2.8 1.1-2.1-.9-2L0 14v-3l2.7-.6.9-2-1.1-2.1 2.8-2.8 2.1 1.1 2-.9z" transform="translate(1 1) scale(.91)"/>',
-    move: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 14h9m-3-3 3 3-3 3"/>',
-    lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1"/>',
-    share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
-    delete: '<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',
-    more: '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>',
-    add: '<path d="m5 19 4-.8L20 7a2.1 2.1 0 0 0-3-3L6 15zM14 7l3 3"/>'
-  };
-
-  const svg = name => `
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="24" height="24"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="currentColor"
-         stroke-width="1.8"
-         stroke-linecap="round"
-         stroke-linejoin="round"
-         aria-hidden="true">
-      ${icons[name]}
-    </svg>
-  `;
-
-  const setIcon = (selector, name) => {
-    const el = document.querySelector(selector);
-    if (el) el.innerHTML = svg(name);
-  };
-
-  function updateIcons() {
-    setIcon('#menu', 'menu');
-    setIcon('#search', 'search');
-
-    const fab = document.querySelector('#fab');
-    if (fab && fab.textContent.trim() === '✎') {
-      fab.innerHTML = svg('add');
-    }
-
-    const sectionIcons = [
-      'notes', 'money', 'debts', 'clients',
-      'cash', 'reports', 'settings'
-    ];
-
-    document.querySelectorAll('#nav button').forEach(button => {
-      const section = button.dataset.section;
-      if (!sectionIcons.includes(section)) return;
-
-const labels = {
-  notes: 'Все заметки',
-  money: 'Доходы / расходы',
-  debts: 'Долги',
-  clients: 'Клиенты',
-  cash: 'Касса',
-  reports: 'Отчёты',
-  settings: 'Настройки'
-};
-
-const label = labels[section];
-
-      button.innerHTML = svg(section) +
-        '<span>' + label + '</span>';
-    });
-
-    [
-      ['#actionMove', 'move'],
-      ['#actionLock', 'lock'],
-      ['#actionShare', 'share'],
-      ['#actionDelete', 'delete'],
-      ['#actionMore', 'more']
-    ].forEach(([selector, name]) => {
-      const el = document.querySelector(selector);
-      const icon = el?.querySelector('.actionIcon');
-      if (icon) icon.innerHTML = svg(name);
-    });
-  }
-
-  updateIcons();
-
-  const nav = document.querySelector('#nav');
-  if (nav) {
-    new MutationObserver(updateIcons).observe(nav, {
-      childList: true
-    });
-  }
-
-  const fab = document.querySelector('#fab');
-  if (fab) {
-    new MutationObserver(() => {
-      if (fab.textContent.trim() === '✎') {
-        fab.innerHTML = svg('add');
-      }
-    }).observe(fab, { childList: true });
-  }
-})();
-/* SAMSUNG NOTES - SMOOTH HEADER ANIMATION */
-
-(() => {
-  const largeHeader = document.getElementById('largeNotesHeader');
-  const smallTitle = document.getElementById('heading');
-
-  if (!largeHeader || !smallTitle) return;
-
-  const distance = 220;
-  let ticking = false;
-
-  function updateHeader() {
-    ticking = false;
-
-    const isNotes = section === 'notes';
-
-    largeHeader.style.display = isNotes ? '' : 'none';
-
-    if (!isNotes) {
-      smallTitle.style.opacity = '1';
-      return;
-    }
-
-    const progress = Math.min(
-      Math.max(window.scrollY / distance, 0),
-      1
-    );
-
-largeHeader.style.opacity = String(1 - progress);
-largeHeader.style.transform =
-  `translateY(-${progress * 110}px)`;
-    smallTitle.style.opacity = String(progress);
-  }
-
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(updateHeader);
-    }
-  }, { passive: true });
-
-  updateHeader();
-})();
