@@ -590,3 +590,12 @@ body.selectionMode main {
 body:not(.selectionMode) header h1 {
   opacity: 0;
 }
+/* NOT FILTRELERINI GIZLE */
+
+#content .folderBar,
+#content .folderTabs,
+#content .folderFilters,
+#content .folder-bar,
+#content .folder-tabs {
+  display: none !important;
+}
