@@ -1,1 +1,74 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#090d1d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css"><title>BEGENCHEKE</title></head><body><div id="app"><header><button id="menu" aria-label="Меню">☰</button><h1 id="heading">Все заметки</h1><button id="search" aria-label="Поиск">⌕</button></header><main id="content"></main><button id="fab" aria-label="Добавить">✎</button><div id="shade"></div><aside id="drawer"><div class="drawerTop"><b>BEGENCHEKE</b><span id="closeDrawer">✕</span></div><nav id="nav"></nav></aside><section id="editor"><div class="editorBar"><button id="back">‹</button><span>Заметка</span><button id="save">✓</button></div><input id="noteTitle" placeholder="Название"><textarea id="noteBody" placeholder="Начните писать..."></textarea><div class="editorFooter">BEGENCHEKE · Заметки</div></section><div id="modalWrap"><div id="modal"></div></div></div><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+    <meta name="theme-color" content="#090d1d">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Yeni iPhone uygulama logosu -->
+    <link rel="apple-touch-icon" sizes="1024x1024" href="./icon.png">
+
+    <!-- Android uygulama logosu -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Tasarım -->
+    <link rel="stylesheet" href="style.css">
+
+    <title>BEGENCHEKE</title>
+</head>
+
+<body>
+<div id="app">
+
+    <header>
+        <button id="menu" aria-label="Меню">☰</button>
+        <h1 id="heading">Все заметки</h1>
+        <button id="search" aria-label="Поиск">⌕</button>
+    </header>
+
+    <main id="content"></main>
+
+    <button id="fab" aria-label="Добавить">✎</button>
+
+    <div id="shade"></div>
+
+    <aside id="drawer">
+        <div class="drawerTop">
+            <b>BEGENCHEKE</b>
+            <span id="closeDrawer">✕</span>
+        </div>
+
+        <nav id="nav"></nav>
+    </aside>
+
+    <section id="editor">
+        <div class="editorBar">
+            <button id="back">‹</button>
+            <span>Заметка</span>
+            <button id="save">✓</button>
+        </div>
+
+        <input id="noteTitle" placeholder="Название">
+
+        <textarea id="noteBody" placeholder="Начните писать..."></textarea>
+
+        <div class="editorFooter">
+            BEGENCHEKE · Заметки
+        </div>
+    </section>
+
+    <div id="modalWrap">
+        <div id="modal"></div>
+    </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
