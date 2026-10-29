@@ -1454,3 +1454,16 @@ if (
     .register('./sw.js')
     .catch(() => {});
 }
+/* iOS PWA - EKRAN YENILEME DUZELTMESI */
+
+if (window.navigator.standalone === true) {
+  let refreshTimer;
+
+  window.addEventListener('touchend', () => {
+    clearTimeout(refreshTimer);
+
+    refreshTimer = setTimeout(() => {
+      updateHeader();
+    }, 80);
+  }, { passive: true });
+}
