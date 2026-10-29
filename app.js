@@ -2,7 +2,7 @@
 
 /* ==========================================
    BEGENCHEKE
-   TAM APP.JS - PIN DUZELTILMIS SURUM
+   TAM APP.JS
    ========================================== */
 
 const $ = s => document.querySelector(s);
@@ -539,8 +539,6 @@ function render() {
   const c = $('#content');
   c.replaceChildren();
 
-  /* NOTLAR */
-
   if (section === 'notes') {
     updateNoteCount();
 
@@ -578,8 +576,6 @@ function render() {
     return;
   }
 
-  /* GELIR / GIDER */
-
   if (section === 'money') {
     c.innerHTML = '<div class="sub">Операции</div>';
 
@@ -593,8 +589,6 @@ function render() {
 
     return;
   }
-
-  /* BORCLAR */
 
   if (section === 'debts') {
     c.innerHTML = '<div class="sub">Долги</div>';
@@ -612,8 +606,6 @@ function render() {
     return;
   }
 
-  /* MUSTERILER */
-
   if (section === 'clients') {
     c.innerHTML = '<div class="sub">Клиенты</div>';
 
@@ -627,8 +619,6 @@ function render() {
 
     return;
   }
-
-  /* KASA VE RAPORLAR */
 
   if (section === 'cash' || section === 'reports') {
     c.innerHTML = '<div class="sub">' +
@@ -672,26 +662,20 @@ function render() {
   }
 
   /* ========================================
-     AYARLAR - PIN KAPATMA EKLENDI
+     AYARLAR - PIN KAPATMA DUGMESI
      ======================================== */
 
   if (section === 'settings') {
-    const pinEnabled = Boolean(data.pin);
-
     c.innerHTML = `
       <div class="sub">Настройки</div>
 
       <button class="pill" id="pinBtn">
-        ${pinEnabled
-          ? '🔐 Изменить PIN'
-          : '🔐 Установить PIN'}
+        🔐 Установить / изменить PIN
       </button>
 
-      ${pinEnabled ? `
-        <button class="pill" id="disablePinBtn">
-          🔓 Отключить PIN
-        </button>
-      ` : ''}
+      <button class="pill" id="disablePinBtn">
+        🔓 Отключить PIN
+      </button>
 
       <button class="pill" id="exportBtn">
         📤 Экспорт резервной копии
@@ -716,10 +700,7 @@ function render() {
     `;
 
     $('#pinBtn').onclick = pinForm;
-
-    if (pinEnabled) {
-      $('#disablePinBtn').onclick = disablePin;
-    }
+    $('#disablePinBtn').onclick = disablePin;
 
     $('#exportBtn').onclick = backup;
     $('#importBtn').onclick = () => $('#fileImport').click();
@@ -1234,28 +1215,20 @@ function pinForm() {
     const newPin = String(f.get('pin') || '');
     const confirmPin = String(f.get('confirmPin') || '');
 
-    /* ESKI PIN KONTROLU */
-
     if (hasPin && oldPin !== String(data.pin)) {
       alert('Неверный текущий PIN');
       return;
     }
-
-    /* YENI PIN KONTROLU */
 
     if (!/^[0-9]{4,8}$/.test(newPin)) {
       alert('PIN должен содержать от 4 до 8 цифр');
       return;
     }
 
-    /* PIN TEKRARI KONTROLU */
-
     if (newPin !== confirmPin) {
       alert('PIN-коды не совпадают');
       return;
     }
-
-    /* YENI PIN KAYDET */
 
     data.pin = newPin;
 
@@ -1320,14 +1293,10 @@ function disablePin() {
       f.get('currentPin') || ''
     );
 
-    /* MEVCUT PIN DOGRULAMA */
-
     if (enteredPin !== String(data.pin)) {
       alert('Неверный PIN');
       return;
     }
-
-    /* ONAY */
 
     if (!confirm(
       'Вы уверены, что хотите отключить PIN?'
@@ -1335,14 +1304,7 @@ function disablePin() {
       return;
     }
 
-    /* PIN KALDIR */
-
     data.pin = '';
-
-    /*
-      PIN KAPATILINCA KILITLI NOTLARIN
-      ERISILEMEZ HALE GELMESINI ONLE
-    */
 
     data.notes.forEach(note => {
       if (note.locked) {
@@ -1350,15 +1312,9 @@ function disablePin() {
       }
     });
 
-    /* VERILERI KAYDET */
-
     persist();
 
-    /* PENCEREYI KAPAT */
-
     $('#modalWrap').classList.remove('open');
-
-    /* AYARLARI YENILE */
 
     render();
 
