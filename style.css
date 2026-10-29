@@ -1087,3 +1087,23 @@ header {
 body {
   margin: 0 !important;
 }
+/* BEGENCHEKE - SECIMDE MAVI KAREYI KALDIR */
+
+.noteCard.selected .notePreview,
+.noteCard.selected .noteLabel,
+.noteCard.selected .noteDate,
+.noteCard.selected::before,
+.noteCard.selected::after {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.noteCard.selected .notePreview {
+  background: transparent !important;
+}
+
+.noteCard.selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
