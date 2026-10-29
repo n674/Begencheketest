@@ -1416,3 +1416,17 @@ header {
 
   }
 }
+/* iOS PWA - UST MENU DUZELTMESI */
+
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    header {
+      height: calc(75px + env(safe-area-inset-top)) !important;
+      min-height: calc(75px + env(safe-area-inset-top)) !important;
+      padding-top: env(safe-area-inset-top) !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 20 !important;
+    }
+  }
+}
