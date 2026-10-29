@@ -1044,3 +1044,27 @@ header::before,
 header::after {
   display: none !important;
 }
+/* BEGENCHEKE - UST CIZGI DUZELTMESI */
+
+html,
+body {
+  margin: 0 !important;
+  background: #09090b !important;
+}
+
+header {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+header::before,
+header::after {
+  content: none !important;
+}
+
+body::before,
+body::after {
+  border: none !important;
+  box-shadow: none !important;
+}
