@@ -1107,3 +1107,236 @@ body {
   outline: none !important;
   box-shadow: none !important;
 }
+/* =========================================
+   BEGENCHEKE — SAMSUNG NOTES TASARIM DÜZELTMESİ
+   ========================================= */
+
+/* Ana ekran */
+html,
+body {
+    background: #09090b !important;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Roboto, sans-serif;
+}
+
+/* Üst başlık alanı */
+header {
+    height: 106px !important;
+    min-height: 106px !important;
+    padding: 0 22px !important;
+    padding-top: env(safe-area-inset-top) !important;
+
+    display: flex !important;
+    align-items: center !important;
+    gap: 17px !important;
+
+    background: #09090b !important;
+    border: none !important;
+    box-shadow: none !important;
+
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+}
+
+/* Все заметки */
+header h1,
+#heading {
+    font-size: 23px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0 !important;
+
+    color: #ffffff !important;
+    margin: 0 !important;
+
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* Menü ve arama düğmeleri */
+#menu,
+#search {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+
+    padding: 5px !important;
+    border: none !important;
+    background: transparent !important;
+    color: #ffffff !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#search {
+    margin-left: auto !important;
+}
+
+/* Büyük başlığı gizle:
+   İlk görüntüde küçük başlık kullanılıyor */
+#largeNotesHeader {
+    display: none !important;
+}
+
+/* Not listesinin üst boşluğu */
+#content {
+    padding: 44px 21px 110px !important;
+    background: #09090b !important;
+}
+
+/* Мои заметки */
+#content .sub,
+.sub {
+    display: block !important;
+    font-size: 19px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+
+    color: #9ca6bf !important;
+
+    margin: 0 0 28px !important;
+    padding: 0 !important;
+}
+
+/* Not kartları */
+.grid,
+.notesGrid,
+.noteGrid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 12px !important;
+}
+
+/* Kart görünümü */
+.noteCard,
+.note-card {
+    position: relative !important;
+
+    background: #222224 !important;
+    border: none !important;
+    border-radius: 19px !important;
+
+    min-width: 0 !important;
+    height: 240px !important;
+
+    padding: 22px 18px !important;
+    box-sizing: border-box !important;
+
+    overflow: hidden !important;
+    box-shadow: none !important;
+}
+
+/* Kart içindeki başlıklar */
+.noteCard .title,
+.noteCard .noteTitle,
+.note-card .title {
+    color: #ffffff !important;
+    font-size: 17px !important;
+    font-weight: 500 !important;
+
+    line-height: 1.4 !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+/* Kart tarihleri */
+.noteCard .date,
+.noteCard .time,
+.note-card .date {
+    color: #9ca6bf !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+}
+
+/* Boş not mesajı */
+.empty,
+.emptyState,
+.empty-state {
+    color: #9ca6bf !important;
+    font-size: 17px !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Mavi kalem düğmesi */
+#fab {
+    position: fixed !important;
+    right: 26px !important;
+    bottom: calc(29px + env(safe-area-inset-bottom)) !important;
+
+    width: 70px !important;
+    height: 70px !important;
+
+    border: none !important;
+    border-radius: 23px !important;
+
+    background: linear-gradient(
+        145deg,
+        #35b7ff,
+        #0877df
+    ) !important;
+
+    color: white !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    box-shadow: 0 9px 24px rgba(0, 130, 255, 0.18) !important;
+
+    z-index: 9 !important;
+}
+
+/* Yan menü ve editör üst başlığın altında kalmasın */
+#shade {
+    z-index: 25 !important;
+}
+
+#drawer {
+    z-index: 30 !important;
+}
+
+#editor {
+    z-index: 40 !important;
+}
+
+#modalWrap {
+    z-index: 50 !important;
+}
+
+/* Seçim modunda mavi çerçeveyi kaldır */
+.noteCard.selected,
+.note-card.selected,
+.selected .noteCard {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Küçük ekran düzeni */
+@media (max-width: 390px) {
+    header {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+
+    #content {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+    }
+
+    .noteCard,
+    .note-card {
+        padding: 20px 15px !important;
+    }
+}
