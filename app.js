@@ -1,5 +1,10 @@
 'use strict';
 
+/* ==========================================
+   BEGENCHEKE
+   TAM APP.JS - PIN DUZELTILMIS SURUM
+   ========================================== */
+
 const $ = s => document.querySelector(s);
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -10,7 +15,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   "'": '&#39;'
 }[c]));
 
-/* VERI ANAHTARI - DEGISTIRME */
+/* VERI ANAHTARI - ASLA DEGISTIRME */
+
 const KEY = 'begencheke_pwa_data_v1';
 
 let data;
@@ -19,14 +25,21 @@ try {
   data = JSON.parse(localStorage.getItem(KEY));
 } catch (e) {}
 
-if (!data || typeof data !== 'object') data = {};
+if (!data || typeof data !== 'object') {
+  data = {};
+}
 
 for (const k of ['notes', 'money', 'debts', 'clients']) {
-  if (!Array.isArray(data[k])) data[k] = [];
+  if (!Array.isArray(data[k])) {
+    data[k] = [];
+  }
 }
 
 data.pin ??= '';
-if (!Array.isArray(data.folders)) data.folders = [];
+
+if (!Array.isArray(data.folders)) {
+  data.folders = [];
+}
 
 function persist() {
   localStorage.setItem(KEY, JSON.stringify(data));
@@ -54,8 +67,9 @@ let section = 'notes';
 let search = '';
 let editing = null;
 let saveTimer = null;
-
 let selectionMode = false;
+let unlocked = true;
+
 const selectedNotes = new Set();
 
 const sections = [
@@ -68,36 +82,93 @@ const sections = [
   ['settings', 'Настройки']
 ];
 
-/* SVG IKONLAR */
+/* ==========================================
+   SVG IKONLAR
+   ========================================== */
 
 const icons = {
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-  search: '<circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.5 4.5"/>',
-  notes: '<rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M12 8h5M12 12h5M12 16h4"/>',
-  money: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="12" cy="14.5" r="2"/>',
-  debts: '<path d="M5 3h14v18l-3-2-4 2-4-2-3 2zM9 8h6M9 12h6"/>',
-  clients: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
-  cash: '<rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 10h18M7 3h12"/><circle cx="15" cy="15.5" r="1.5"/>',
-  reports: '<path d="M4 20V11M10 20V5M16 20v-9M22 20V8"/>',
-  settings: '<circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.3 2 .9 2.1-1.1 2.8 2.8-1.1 2.1.9 2L24 11v3l-2.7.6-.9-2-1.1-2.1-2.8-2.8-2.1 1.1-2 .9L14 24h-4l-.6-2.7-2-.9-2.1 1.1-2 .9z" transform="translate(1 1) scale(.91)"/>',
-  move: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM8 14h9m-3-3 3 3-3 3"/>',
-  lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-  share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
-  delete: '<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',
-  more: '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>',
-  add: '<path d="m5 19 4-.8L20 7a2.1 2.1 0 0 0-3-3L6 15zM14 7l3 3-3 3"/>',
+
+  search:
+    '<circle cx="10.8" cy="10.8" r="6.5"/>' +
+    '<path d="m16 16 4.5 4.5"/>',
+
+  notes:
+    '<rect x="5" y="3" width="15" height="18" rx="2"/>' +
+    '<path d="M9 3v18M12 8h5M12 12h5M12 16h4"/>',
+
+  money:
+    '<rect x="3" y="6" width="18" height="13" rx="2"/>' +
+    '<path d="M3 10h18"/>' +
+    '<circle cx="12" cy="14.5" r="2"/>',
+
+  debts:
+    '<path d="M5 3h14v18l-3-2-4 2-4-2-3 2z' +
+    'M9 8h6M9 12h6"/>',
+
+  clients:
+    '<circle cx="12" cy="8" r="4"/>' +
+    '<path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+
+  cash:
+    '<rect x="3" y="6" width="18" height="15" rx="2"/>' +
+    '<path d="M3 10h18M7 3h12"/>' +
+    '<circle cx="15" cy="15.5" r="1.5"/>',
+
+  reports:
+    '<path d="M4 20V11M10 20V5M16 20v-9M22 20V8"/>',
+
+  settings:
+    '<circle cx="12" cy="12" r="3"/>' +
+    '<path d="M12 2v3m0 14v3M2 12h3m14 0h3' +
+    'M5 5l2 2m10 10 2 2M19 5l-2 2M7 17l-2 2"/>',
+
+  move:
+    '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7' +
+    'a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5' +
+    'a2 2 0 0 1-2-2zM8 14h9m-3-3 3 3-3 3"/>',
+
+  lock:
+    '<rect x="5" y="10" width="14" height="11" rx="2"/>' +
+    '<path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+
+  share:
+    '<path d="M12 16V3m-5 5 5-5 5 5' +
+    'M5 13v6a2 2 0 0 0 2 2h10' +
+    'a2 2 0 0 0 2-2v-6"/>',
+
+  delete:
+    '<path d="M4 7h16M9 7V4h6v3' +
+    'M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',
+
+  more:
+    '<circle cx="12" cy="5" r="1.5"/>' +
+    '<circle cx="12" cy="12" r="1.5"/>' +
+    '<circle cx="12" cy="19" r="1.5"/>',
+
+  add:
+    '<path d="m5 19 4-.8L20 7' +
+    'a2.1 2.1 0 0 0-3-3L6 15z' +
+    'M14 7l3 3-3 3"/>',
+
   plus: '<path d="M12 5v14M5 12h14"/>'
 };
 
 function svg(name) {
-  return `<svg xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.8"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true">${icons[name] || ''}</svg>`;
+  return `
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      ${icons[name] || ''}
+    </svg>
+  `;
 }
 
 $('#menu').innerHTML = svg('menu');
@@ -113,7 +184,9 @@ for (const [selector, icon] of [
   $(selector).querySelector('.actionIcon').innerHTML = svg(icon);
 }
 
-/* YAN MENU */
+/* ==========================================
+   YAN MENU
+   ========================================== */
 
 function drawer(open) {
   document.body.classList.toggle('drawerOpen', open);
@@ -123,7 +196,9 @@ $('#menu').onclick = () => drawer(true);
 $('#shade').onclick = () => drawer(false);
 $('#closeDrawer').onclick = () => drawer(false);
 
-/* SAMSUNG NOTES BASLIK */
+/* ==========================================
+   BASLIK
+   ========================================== */
 
 const largeHeader = $('#largeNotesHeader');
 const smallTitle = $('#heading');
@@ -151,14 +226,6 @@ function noteCountText(count) {
 function updateNoteCount() {
   largeCount.textContent = noteCountText(data.notes.length);
 }
-
-/*
- * BASLIK ANIMASYONU DUZELTILDI
- *
- * Buyuk baslik sayfayla birlikte yukari kayar.
- * Kucuk baslik ancak buyuk baslik ust cubugun
- * arkasina girdiginde gorunmeye baslar.
- */
 
 function updateHeader() {
   const isNotes = section === 'notes';
@@ -209,9 +276,13 @@ window.addEventListener('scroll', () => {
   });
 }, { passive: true });
 
-/* BOLUM DEGISTIRME */
+/* ==========================================
+   BOLUM DEGISTIRME
+   ========================================== */
 
 function go(s) {
+  if (!unlocked) return;
+
   exitSelection(false);
 
   section = s;
@@ -222,10 +293,18 @@ function go(s) {
   smallTitle.textContent =
     sections.find(x => x[0] === s)?.[1] || s;
 
-  const canAdd = ['notes', 'money', 'debts', 'clients'].includes(s);
+  const canAdd = [
+    'notes',
+    'money',
+    'debts',
+    'clients'
+  ].includes(s);
 
   $('#fab').style.display = canAdd ? 'flex' : 'none';
-  $('#fab').innerHTML = svg(s === 'notes' ? 'add' : 'plus');
+
+  $('#fab').innerHTML = svg(
+    s === 'notes' ? 'add' : 'plus'
+  );
 
   $('#nav').innerHTML = sections.map(([key, label]) => `
     <button
@@ -248,10 +327,13 @@ function go(s) {
   updateHeader();
 }
 
-/* GENEL KART */
+/* ==========================================
+   GENEL KART
+   ========================================== */
 
 function card(title, detail, remove) {
   const el = document.createElement('div');
+
   el.className = 'card fade';
 
   el.innerHTML = `
@@ -275,7 +357,9 @@ function card(title, detail, remove) {
   return el;
 }
 
-/* COKLU SECIM */
+/* ==========================================
+   COKLU SECIM
+   ========================================== */
 
 function enterSelection(noteId) {
   if (section !== 'notes') return;
@@ -331,6 +415,7 @@ function toggleSelection(noteId) {
     return;
   }
 
+  updateSelection();
   render();
 }
 
@@ -340,7 +425,9 @@ function selectedRecords() {
 
 $('#selectionCancel').onclick = () => exitSelection();
 
-/* NOT KARTLARI */
+/* ==========================================
+   NOT KARTLARI
+   ========================================== */
 
 function createNoteCard(n) {
   const el = document.createElement('div');
@@ -381,7 +468,10 @@ function createNoteCard(n) {
 
   el.addEventListener('pointerdown', e => {
     if (selectionMode) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    if (e.pointerType === 'mouse' && e.button !== 0) {
+      return;
+    }
 
     startX = e.clientX;
     startY = e.clientY;
@@ -439,11 +529,17 @@ function createNoteCard(n) {
   return el;
 }
 
-/* ANA EKRAN */
+/* ==========================================
+   ANA EKRAN
+   ========================================== */
 
 function render() {
+  if (!unlocked) return;
+
   const c = $('#content');
   c.replaceChildren();
+
+  /* NOTLAR */
 
   if (section === 'notes') {
     updateNoteCount();
@@ -457,13 +553,17 @@ function render() {
 
     if (!notes.length) {
       const empty = document.createElement('p');
+
       empty.className = 'empty';
+
       empty.textContent = search
         ? 'Ничего не найдено.'
         : 'Заметок пока нет.';
+
       c.append(empty);
     } else {
       const grid = document.createElement('div');
+
       grid.className = 'grid';
       grid.id = 'noteGrid';
 
@@ -478,6 +578,8 @@ function render() {
     return;
   }
 
+  /* GELIR / GIDER */
+
   if (section === 'money') {
     c.innerHTML = '<div class="sub">Операции</div>';
 
@@ -491,6 +593,8 @@ function render() {
 
     return;
   }
+
+  /* BORCLAR */
 
   if (section === 'debts') {
     c.innerHTML = '<div class="sub">Долги</div>';
@@ -508,6 +612,8 @@ function render() {
     return;
   }
 
+  /* MUSTERILER */
+
   if (section === 'clients') {
     c.innerHTML = '<div class="sub">Клиенты</div>';
 
@@ -521,6 +627,8 @@ function render() {
 
     return;
   }
+
+  /* KASA VE RAPORLAR */
 
   if (section === 'cash' || section === 'reports') {
     c.innerHTML = '<div class="sub">' +
@@ -563,13 +671,27 @@ function render() {
     return;
   }
 
+  /* ========================================
+     AYARLAR - PIN KAPATMA EKLENDI
+     ======================================== */
+
   if (section === 'settings') {
+    const pinEnabled = Boolean(data.pin);
+
     c.innerHTML = `
       <div class="sub">Настройки</div>
 
       <button class="pill" id="pinBtn">
-        🔐 Установить / изменить PIN
+        ${pinEnabled
+          ? '🔐 Изменить PIN'
+          : '🔐 Установить PIN'}
       </button>
+
+      ${pinEnabled ? `
+        <button class="pill" id="disablePinBtn">
+          🔓 Отключить PIN
+        </button>
+      ` : ''}
 
       <button class="pill" id="exportBtn">
         📤 Экспорт резервной копии
@@ -594,13 +716,22 @@ function render() {
     `;
 
     $('#pinBtn').onclick = pinForm;
+
+    if (pinEnabled) {
+      $('#disablePinBtn').onclick = disablePin;
+    }
+
     $('#exportBtn').onclick = backup;
     $('#importBtn').onclick = () => $('#fileImport').click();
     $('#fileImport').onchange = importBackup;
+
+    return;
   }
 }
 
-/* SECILEN NOTLARI TASI */
+/* ==========================================
+   NOTLARI KLASORE TASI
+   ========================================== */
 
 $('#actionMove').onclick = () => {
   if (!selectedNotes.size) return;
@@ -628,7 +759,9 @@ $('#actionMove').onclick = () => {
   alert('Заметки перемещены');
 };
 
-/* NOTLARI KILITLE */
+/* ==========================================
+   NOTLARI KILITLE
+   ========================================== */
 
 $('#actionLock').onclick = () => {
   if (!selectedNotes.size) return;
@@ -659,7 +792,9 @@ $('#actionLock').onclick = () => {
   );
 };
 
-/* PAYLAS */
+/* ==========================================
+   PAYLAS
+   ========================================== */
 
 $('#actionShare').onclick = async () => {
   if (!selectedNotes.size) return;
@@ -696,7 +831,9 @@ $('#actionShare').onclick = async () => {
   }
 };
 
-/* NOT SIL */
+/* ==========================================
+   NOT SIL
+   ========================================== */
 
 $('#actionDelete').onclick = () => {
   if (!selectedNotes.size) return;
@@ -722,7 +859,9 @@ $('#actionDelete').onclick = () => {
   exitSelection();
 };
 
-/* DIGER ISLEMLER */
+/* ==========================================
+   DIGER ISLEMLER
+   ========================================== */
 
 $('#actionMore').onclick = () => {
   if (!selectionMode) return;
@@ -741,6 +880,7 @@ $('#actionMore').onclick = () => {
     ).toLowerCase().includes(search.toLowerCase()))
       .forEach(n => selectedNotes.add(n.id));
 
+    updateSelection();
     render();
   }
 
@@ -768,10 +908,14 @@ $('#actionMore').onclick = () => {
   }
 };
 
-/* ARAMA */
+/* ==========================================
+   ARAMA
+   ========================================== */
 
 $('#search').onclick = () => {
-  if (section !== 'notes') go('notes');
+  if (section !== 'notes') {
+    go('notes');
+  }
 
   const value = prompt('Поиск заметок', search);
 
@@ -782,16 +926,25 @@ $('#search').onclick = () => {
   }
 };
 
-/* EKLEME DUGMESI */
+/* ==========================================
+   EKLEME DUGMESI
+   ========================================== */
 
 $('#fab').onclick = () => {
-  if (section === 'notes') openNote();
-  else if (section === 'money') form('money');
-  else if (section === 'debts') form('debts');
-  else if (section === 'clients') form('clients');
+  if (section === 'notes') {
+    openNote();
+  } else if (section === 'money') {
+    form('money');
+  } else if (section === 'debts') {
+    form('debts');
+  } else if (section === 'clients') {
+    form('clients');
+  }
 };
 
-/* NOT DUZENLEME */
+/* ==========================================
+   NOT DUZENLEME
+   ========================================== */
 
 function openNote(noteId) {
   let n = noteId
@@ -824,6 +977,7 @@ function openNote(noteId) {
   $('#noteBody').value = n.body || '';
 
   $('#editor').classList.add('open');
+  document.body.classList.add('editorOpen');
 
   setTimeout(() => {
     if ($('#editor').classList.contains('open')) {
@@ -841,6 +995,7 @@ function saveNote() {
     n.title = $('#noteTitle').value;
     n.body = $('#noteBody').value;
     n.updated = now();
+
     persist();
   }
 }
@@ -858,6 +1013,7 @@ function closeNote() {
   editing = null;
 
   $('#editor').classList.remove('open');
+  document.body.classList.remove('editorOpen');
 
   render();
 }
@@ -865,7 +1021,9 @@ function closeNote() {
 $('#back').onclick = closeNote;
 $('#save').onclick = closeNote;
 
-/* MODAL */
+/* ==========================================
+   MODAL PENCERE
+   ========================================== */
 
 function modal(html, onSubmit) {
   $('#modal').innerHTML = html;
@@ -881,7 +1039,9 @@ function modal(html, onSubmit) {
   };
 }
 
-/* GELIR / GIDER / BORC / MUSTERI */
+/* ==========================================
+   GELIR / GIDER / BORC / MUSTERI
+   ========================================== */
 
 function form(kind) {
   let fields = '';
@@ -904,56 +1064,72 @@ function form(kind) {
         <option>Расход</option>
       </select>
 
-      <input name="amount"
+      <input
+        name="amount"
         type="number"
         min="0.01"
         step="0.01"
         placeholder="Сумма"
-        required>
+        required
+      >
 
       ${currency}
 
-      <textarea name="description"
-        placeholder="Описание"></textarea>
+      <textarea
+        name="description"
+        placeholder="Описание"
+      ></textarea>
     `;
   } else if (kind === 'debts') {
     title = 'Новый долг';
 
     fields = `
-      <input name="person"
+      <input
+        name="person"
         placeholder="Имя человека"
-        required>
+        required
+      >
 
       <select name="kind">
         <option>Мне должны</option>
         <option>Я должен</option>
       </select>
 
-      <input name="amount"
+      <input
+        name="amount"
         type="number"
         min="0.01"
         step="0.01"
         placeholder="Сумма"
-        required>
+        required
+      >
 
       ${currency}
 
-      <textarea name="description"
-        placeholder="Комментарий"></textarea>
+      <textarea
+        name="description"
+        placeholder="Комментарий"
+      ></textarea>
     `;
   } else {
     title = 'Новый клиент';
 
     fields = `
-      <input name="name"
+      <input
+        name="name"
         placeholder="Имя клиента"
-        required>
+        required
+      >
 
-      <input name="phone"
-        placeholder="Телефон">
+      <input
+        name="phone"
+        placeholder="Телефон"
+      >
 
-      <textarea name="details"
-        placeholder="Заметка / счёт"></textarea>
+      <textarea
+        name="details"
+        placeholder="Заметка / счёт"
+      ></textarea>
     `;
   }
 
@@ -992,22 +1168,57 @@ function form(kind) {
   });
 }
 
-/* PIN AYARLARI */
+/* ==========================================
+   PIN OLUSTURMA VE DEGISTIRME
+   ========================================== */
 
 function pinForm() {
+  const hasPin = Boolean(data.pin);
+
   modal(`
-    <h2>Защита PIN</h2>
+    <h2>
+      ${hasPin ? 'Изменить PIN' : 'Установить PIN'}
+    </h2>
 
     <form>
+
+      ${hasPin ? `
+        <input
+          type="password"
+          name="oldPin"
+          inputmode="numeric"
+          placeholder="Текущий PIN"
+          autocomplete="off"
+          required
+        >
+      ` : ''}
+
       <input
         type="password"
         name="pin"
         inputmode="numeric"
         pattern="[0-9]{4,8}"
+        minlength="4"
+        maxlength="8"
         placeholder="Новый PIN (4–8 цифр)"
-        required>
+        autocomplete="new-password"
+        required
+      >
+
+      <input
+        type="password"
+        name="confirmPin"
+        inputmode="numeric"
+        pattern="[0-9]{4,8}"
+        minlength="4"
+        maxlength="8"
+        placeholder="Повторите новый PIN"
+        autocomplete="new-password"
+        required
+      >
 
       <div class="actions">
+
         <button type="button" class="cancel">
           Отмена
         </button>
@@ -1015,19 +1226,149 @@ function pinForm() {
         <button type="submit">
           Сохранить
         </button>
+
       </div>
     </form>
   `, f => {
-    data.pin = f.get('pin');
+    const oldPin = String(f.get('oldPin') || '');
+    const newPin = String(f.get('pin') || '');
+    const confirmPin = String(f.get('confirmPin') || '');
+
+    /* ESKI PIN KONTROLU */
+
+    if (hasPin && oldPin !== String(data.pin)) {
+      alert('Неверный текущий PIN');
+      return;
+    }
+
+    /* YENI PIN KONTROLU */
+
+    if (!/^[0-9]{4,8}$/.test(newPin)) {
+      alert('PIN должен содержать от 4 до 8 цифр');
+      return;
+    }
+
+    /* PIN TEKRARI KONTROLU */
+
+    if (newPin !== confirmPin) {
+      alert('PIN-коды не совпадают');
+      return;
+    }
+
+    /* YENI PIN KAYDET */
+
+    data.pin = newPin;
 
     persist();
 
     $('#modalWrap').classList.remove('open');
-    alert('PIN сохранён');
+
+    render();
+
+    alert(
+      hasPin
+        ? 'PIN успешно изменён'
+        : 'PIN успешно установлен'
+    );
   });
 }
 
-/* YEDEKLEME */
+/* ==========================================
+   PIN DEVRE DISI BIRAKMA
+   ========================================== */
+
+function disablePin() {
+  if (!data.pin) {
+    alert('PIN уже отключён');
+    render();
+    return;
+  }
+
+  modal(`
+    <h2>Отключить PIN</h2>
+
+    <p class="small">
+      Для отключения защиты введите
+      текущий PIN-код.
+    </p>
+
+    <form>
+
+      <input
+        type="password"
+        name="currentPin"
+        inputmode="numeric"
+        placeholder="Текущий PIN"
+        autocomplete="off"
+        required
+      >
+
+      <div class="actions">
+
+        <button type="button" class="cancel">
+          Отмена
+        </button>
+
+        <button type="submit">
+          Отключить PIN
+        </button>
+
+      </div>
+    </form>
+  `, f => {
+    const enteredPin = String(
+      f.get('currentPin') || ''
+    );
+
+    /* MEVCUT PIN DOGRULAMA */
+
+    if (enteredPin !== String(data.pin)) {
+      alert('Неверный PIN');
+      return;
+    }
+
+    /* ONAY */
+
+    if (!confirm(
+      'Вы уверены, что хотите отключить PIN?'
+    )) {
+      return;
+    }
+
+    /* PIN KALDIR */
+
+    data.pin = '';
+
+    /*
+      PIN KAPATILINCA KILITLI NOTLARIN
+      ERISILEMEZ HALE GELMESINI ONLE
+    */
+
+    data.notes.forEach(note => {
+      if (note.locked) {
+        note.locked = false;
+      }
+    });
+
+    /* VERILERI KAYDET */
+
+    persist();
+
+    /* PENCEREYI KAPAT */
+
+    $('#modalWrap').classList.remove('open');
+
+    /* AYARLARI YENILE */
+
+    render();
+
+    alert('PIN успешно отключён');
+  });
+}
+
+/* ==========================================
+   YEDEKLEME
+   ========================================== */
 
 function backup() {
   const blob = new Blob(
@@ -1039,12 +1380,17 @@ function backup() {
 
   a.href = URL.createObjectURL(blob);
   a.download = 'BEGENCHEKE-backup.json';
+
   a.click();
 
   setTimeout(() => {
     URL.revokeObjectURL(a.href);
   }, 2000);
 }
+
+/* ==========================================
+   YEDEK GERI YUKLEME
+   ========================================== */
 
 async function importBackup(e) {
   const file = e.target.files?.[0];
@@ -1074,6 +1420,7 @@ async function importBackup(e) {
     data.pin ??= '';
 
     persist();
+
     exitSelection(false);
     render();
     updateNoteCount();
@@ -1084,24 +1431,34 @@ async function importBackup(e) {
   }
 }
 
-/* UYGULAMA PIN KONTROLU */
+/* ==========================================
+   UYGULAMA ACILIS PIN KONTROLU
+   ========================================== */
 
 function lock() {
-  if (!data.pin) return;
+  if (!data.pin) {
+    unlocked = true;
+    return;
+  }
 
   const pin = prompt('BEGENCHEKE PIN');
 
-  if (pin !== data.pin) {
+  unlocked = pin === data.pin;
+
+  if (!unlocked) {
     $('#content').innerHTML =
       '<p class="empty">PIN yanlış. Yeniden deneyin.</p>';
 
     $('#fab').style.display = 'none';
+
     $('#menu').disabled = true;
     $('#search').disabled = true;
   }
 }
 
-/* GERI TUSU */
+/* ==========================================
+   GERI TUSU
+   ========================================== */
 
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
@@ -1119,12 +1476,19 @@ window.addEventListener('keydown', e => {
   }
 });
 
-/* BASLAT */
+/* ==========================================
+   BASLAT
+   ========================================== */
 
-go('notes');
 lock();
 
-/* OFFLINE */
+if (unlocked) {
+  go('notes');
+}
+
+/* ==========================================
+   OFFLINE
+   ========================================== */
 
 if (
   'serviceWorker' in navigator &&
