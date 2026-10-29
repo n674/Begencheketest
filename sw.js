@@ -1,17 +1,15 @@
 'use strict';
 
-const CACHE = 'begencheke-pwa-v15';
+const CACHE = 'begencheke-pwa-v20';
 
 const FILES = [
   './',
   './index.html',
   './style.css?v=15',
-  './app.js?v=15',
+  './app.js?v=20',
   './manifest.json',
   './icon.png'
 ];
-
-/* YENI SURUMU YUKLE */
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -21,35 +19,25 @@ self.addEventListener('install', event => {
   );
 });
 
-/* ESKI ONBELLEGI TEMIZLE */
-
 self.addEventListener('activate', event => {
   event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-
-      await Promise.all(
+    caches.keys().then(keys =>
+      Promise.all(
         keys
           .filter(key =>
             key.startsWith('begencheke-pwa-') &&
             key !== CACHE
           )
           .map(key => caches.delete(key))
-      );
-
-      await self.clients.claim();
-    })()
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-/* INTERNET VARSA GUNCEL DOSYAYI AL */
-
 self.addEventListener('fetch', event => {
-  const request = event.request;
+  if (event.request.method !== 'GET') return;
 
-  if (request.method !== 'GET') return;
-
-  const url = new URL(request.url);
+  const url = new URL(event.request.url);
 
   if (url.origin !== self.location.origin) return;
 
@@ -58,22 +46,21 @@ self.addEventListener('fetch', event => {
       const cache = await caches.open(CACHE);
 
       try {
-        const response = await fetch(request);
+        const response = await fetch(event.request);
 
         if (response.ok) {
-          await cache.put(request, response.clone());
+          await cache.put(event.request, response.clone());
         }
 
         return response;
       } catch (error) {
-        const cached = await cache.match(request);
+        const cached = await cache.match(event.request);
 
         if (cached) return cached;
 
-        if (request.mode === 'navigate') {
-          const fallback = await cache.match('./index.html');
-
-          if (fallback) return fallback;
+        if (event.request.mode === 'navigate') {
+          return await cache.match('./index.html') ||
+            Response.error();
         }
 
         return Response.error();
