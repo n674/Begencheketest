@@ -1340,3 +1340,16 @@ header h1,
         padding: 20px 15px !important;
     }
 }
+/* Üstteki fazla boşluğu küçült */
+header {
+    height: 75px !important;
+    min-height: 75px !important;
+}
+
+#content {
+    padding-top: 15px !important;
+}
+
+#largeNotesHeader {
+    display: none !important;
+}
