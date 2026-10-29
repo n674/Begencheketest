@@ -1021,3 +1021,26 @@ body.notesPage #content .grid .noteCard .noteDate {
 
   transform: none !important;
 }
+/* BEGENCHEKE - UST ALAN RENGI */
+
+:root {
+  --bg: #09090b !important;
+}
+
+html,
+body {
+  background-color: #09090b !important;
+}
+
+header {
+  background-color: #09090b !important;
+  border: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+header::before,
+header::after {
+  display: none !important;
+}
