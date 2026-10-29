@@ -1068,3 +1068,22 @@ body::after {
   border: none !important;
   box-shadow: none !important;
 }
+/* BEGENCHEKE - UST CIZGI DUZELTMESI */
+
+html,
+body,
+#app {
+  background: #09090b !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+header {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Ust kisimda renk farkini onle */
+body {
+  margin: 0 !important;
+}
