@@ -1,7 +1,7 @@
 {
   "name": "BEGENCHEKE — Заметки и бухгалтерия",
   "short_name": "BEGENCHEKE",
-  "description": "BEGENCHEKE — приложение для заметок, учёта доходов и расходов, долгов, клиентов и управления личными финансами.",
+  "description": "BEGENCHEKE — приложение для заметок, учёта доходов и расходов, долгов и клиентов.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -10,10 +10,16 @@
   "lang": "ru",
   "icons": [
     {
-      "src": "icon.png",
-      "sizes": "any",
+      "src": "./icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
