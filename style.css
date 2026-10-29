@@ -1389,3 +1389,30 @@ header {
     touch-action: pan-y;
   }
 }
+/* iPHONE PWA - UST MENU KONUM DUZELTMESI */
+
+@supports (-webkit-touch-callout: none) {
+
+  @media (display-mode: standalone) {
+
+    header {
+      height: calc(75px + env(safe-area-inset-top)) !important;
+      min-height: calc(75px + env(safe-area-inset-top)) !important;
+
+      padding-top: env(safe-area-inset-top) !important;
+
+      position: sticky !important;
+      top: 0 !important;
+
+      z-index: 20 !important;
+    }
+
+    #menu,
+    #search,
+    #heading {
+      position: relative !important;
+      z-index: 21 !important;
+    }
+
+  }
+}
